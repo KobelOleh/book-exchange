@@ -58,16 +58,16 @@ Pages: `/login`, `/register`, `/` (browse, search, request an exchange),
 
 All routes except `/api/health`, `/api/auth/register` and `/api/auth/login` require the auth cookie.
 
-| Route                                                              | What                                                                                 |
-| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/me` | authentication                                                                       |
-| `PATCH /api/auth/me`                                               | edit own name, email, avatar URL (`null` clears it); `GET` also returns `booksCount` |
-| `POST /api/auth/forgot-password`, `/reset-password`                | request a Password Reset Link (always `204`); set a new password with it             |
-| `GET /api/books?search=&mine=true`, `GET /api/books/:id`           | browse and search Books                                                              |
-| `POST /api/books`, `DELETE /api/books/:id`                         | add a Book; remove own Book (Admin: any)                                             |
-| `POST /api/exchange-requests`                                      | `{ requestedBookId, offeredBookIds[] }`; the Owner is notified (logged to console)   |
-| `GET /api/exchange-requests/sent`, `/received`                     | the caller's ExchangeRequests                                                        |
-| `/api/users` (Admin only)                                          | list, create, update, delete Users                                                   |
+| Route                                                                 | What                                                                                                        |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/me`    | authentication                                                                                              |
+| `PATCH /api/auth/me`                                                  | edit own name, email, avatar URL (`null` clears it); `GET` also returns `booksCount`                        |
+| `POST /api/auth/forgot-password`, `/reset-password`                   | request a Password Reset Link (always `204`); set a new password with it                                    |
+| `GET /api/books?search=&mine=true&page=&limit=`, `GET /api/books/:id` | browse and search Books, A→Z by name; returns `{ items, total, page, limit }` (`limit` default 12, max 100) |
+| `POST /api/books`, `DELETE /api/books/:id`                            | add a Book; remove own Book (Admin: any)                                                                    |
+| `POST /api/exchange-requests`                                         | `{ requestedBookId, offeredBookIds[] }`; the Owner is notified (logged to console)                          |
+| `GET /api/exchange-requests/sent`, `/received`                        | the caller's ExchangeRequests                                                                               |
+| `/api/users` (Admin only)                                             | list, create, update, delete Users                                                                          |
 
 The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `backend/.env`, then run `npx prisma db seed`.
 

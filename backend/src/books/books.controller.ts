@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '../common/authenticated-user.js';
 import { CurrentUser } from '../common/current-user.decorator.js';
+import type { Page } from '../common/page.js';
 import { BookWithOwner, BooksService } from './books.service.js';
 import { CreateBookDto } from './dto/create-book.dto.js';
 import { ListBooksQueryDto } from './dto/list-books-query.dto.js';
@@ -24,9 +25,14 @@ export class BooksController {
   @Get()
   list(
     @CurrentUser() user: AuthenticatedUser,
-    @Query() { search, mine }: ListBooksQueryDto,
-  ): Promise<BookWithOwner[]> {
-    return this.books.list({ search, ownerId: mine ? user.id : undefined });
+    @Query() { search, mine, page, limit }: ListBooksQueryDto,
+  ): Promise<Page<BookWithOwner>> {
+    return this.books.list({
+      search,
+      ownerId: mine ? user.id : undefined,
+      page,
+      limit,
+    });
   }
 
   @Get(':id')

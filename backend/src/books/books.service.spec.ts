@@ -59,13 +59,38 @@ describe('BooksService', () => {
     expect(book.owner.id).toBe(olena.id);
   });
 
-  it('lists Books from every Owner, newest first', async () => {
-    await books.create(olena, { name: 'Dune', author: 'Herbert', photoUrl });
-    await books.create(taras, { name: 'Emma', author: 'Austen', photoUrl });
+  it('lists Books from every Owner alphabetically, ignoring case', async () => {
+    await books.create(olena, { name: 'emma', author: 'Austen', photoUrl });
+    await books.create(taras, { name: 'Dune', author: 'Herbert', photoUrl });
+    await books.create(olena, { name: 'Anna', author: 'Tolstoy', photoUrl });
 
-    const list = await books.list();
+    const { items } = await books.list();
 
-    expect(list.map((b) => b.name)).toEqual(['Emma', 'Dune']);
+    expect(items.map((b) => b.name)).toEqual(['Anna', 'Dune', 'emma']);
+  });
+
+  it('pages the list and reports the total', async () => {
+    for (const name of ['A', 'B', 'C', 'D', 'E']) {
+      await books.create(olena, { name, author: 'x', photoUrl });
+    }
+
+    const second = await books.list({ page: 2, limit: 2 });
+    const past = await books.list({ page: 9, limit: 2 });
+
+    expect(second.items.map((b) => b.name)).toEqual(['C', 'D']);
+    expect(second).toMatchObject({ total: 5, page: 2, limit: 2 });
+    expect(past.items).toEqual([]);
+    expect(past.total).toBe(5);
+  });
+
+  it('counts only matching Books and treats search wildcards literally', async () => {
+    await books.create(olena, { name: '100% Pure', author: 'x', photoUrl });
+    await books.create(olena, { name: 'Dune', author: 'x', photoUrl });
+
+    const found = await books.list({ search: '%', limit: 1 });
+
+    expect(found.items.map((b) => b.name)).toEqual(['100% Pure']);
+    expect(found.total).toBe(1);
   });
 
   it('searches by name or author, ignoring case', async () => {
@@ -76,8 +101,8 @@ describe('BooksService', () => {
       photoUrl,
     });
 
-    const byName = await books.list({ search: 'dUNe' });
-    const byAuthor = await books.list({ search: 'austen' });
+    const { items: byName } = await books.list({ search: 'dUNe' });
+    const { items: byAuthor } = await books.list({ search: 'austen' });
 
     expect(byName.map((b) => b.name)).toEqual(['Dune']);
     expect(byAuthor.map((b) => b.name)).toEqual(['Emma']);
@@ -87,7 +112,7 @@ describe('BooksService', () => {
     await books.create(olena, { name: 'Dune', author: 'Herbert', photoUrl });
     await books.create(taras, { name: 'Emma', author: 'Austen', photoUrl });
 
-    const list = await books.list({ ownerId: taras.id });
+    const { items: list } = await books.list({ ownerId: taras.id });
 
     expect(list.map((b) => b.name)).toEqual(['Emma']);
   });
@@ -115,7 +140,7 @@ describe('BooksService', () => {
 
     await books.remove(admin, book.id);
 
-    expect(await books.list()).toHaveLength(0);
+    expect((await books.list()).items).toHaveLength(0);
   });
 
   it('forbids a User from removing a Book they do not own', async () => {
@@ -128,7 +153,7 @@ describe('BooksService', () => {
     await expect(books.remove(taras, book.id)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
-    expect(await books.list()).toHaveLength(1);
+    expect((await books.list()).items).toHaveLength(1);
   });
 
   it('reports a missing Book as not found', async () => {

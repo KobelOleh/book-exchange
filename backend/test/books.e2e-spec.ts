@@ -80,9 +80,31 @@ describe('Books (HTTP)', () => {
       .expect(200);
     const mine = await olena.agent.get('/api/books?mine=true').expect(200);
 
-    expect(all.body).toHaveLength(2);
-    expect(search.body.map((b: { name: string }) => b.name)).toEqual(['Emma']);
-    expect(mine.body.map((b: { name: string }) => b.name)).toEqual(['Dune']);
+    expect(all.body).toMatchObject({ total: 2, page: 1, limit: 12 });
+    expect(search.body.items.map((b: { name: string }) => b.name)).toEqual([
+      'Emma',
+    ]);
+    expect(mine.body.items.map((b: { name: string }) => b.name)).toEqual([
+      'Dune',
+    ]);
+  });
+
+  it('pages the list and rejects bad paging', async () => {
+    const { agent } = await registerAgent(app, 'Olena');
+    for (const name of ['B', 'A', 'C']) {
+      await agent
+        .post('/api/books')
+        .send({ ...dune, name })
+        .expect(201);
+    }
+
+    const page = await agent.get('/api/books?page=2&limit=2').expect(200);
+
+    expect(page.body.items.map((b: { name: string }) => b.name)).toEqual(['C']);
+    expect(page.body).toMatchObject({ total: 3, page: 2, limit: 2 });
+    await agent.get('/api/books?limit=101').expect(400);
+    await agent.get('/api/books?page=0').expect(400);
+    await agent.get('/api/books?limit=abc').expect(400);
   });
 
   it('fetches one Book and reports an unknown one as not found', async () => {
@@ -108,6 +130,6 @@ describe('Books (HTTP)', () => {
     await admin.delete(`/api/books/${second.body.id}`).expect(204);
 
     const left = await olena.agent.get('/api/books').expect(200);
-    expect(left.body).toHaveLength(0);
+    expect(left.body.items).toHaveLength(0);
   });
 });

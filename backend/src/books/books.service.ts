@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { AuthenticatedUser } from '../common/authenticated-user.js';
+import { DEFAULT_PAGE_LIMIT, Page } from '../common/page.js';
 import { Prisma, Role } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
@@ -25,6 +26,8 @@ export interface CreateBookInput {
 export interface ListBooksFilter {
   search?: string;
   ownerId?: string;
+  page?: number;
+  limit?: number;
 }
 
 @Injectable()
@@ -41,21 +44,45 @@ export class BooksService {
     });
   }
 
-  list({ search, ownerId }: ListBooksFilter = {}): Promise<BookWithOwner[]> {
+  /** One page of Books, ordered by name (case-insensitive), then by id. */
+  async list({
+    search,
+    ownerId,
+    page = 1,
+    limit = DEFAULT_PAGE_LIMIT,
+  }: ListBooksFilter = {}): Promise<Page<BookWithOwner>> {
     const term = search?.trim();
-    return this.prisma.book.findMany({
-      where: {
-        ...(ownerId && { ownerId }),
-        ...(term && {
-          OR: [
-            { name: { contains: term, mode: 'insensitive' } },
-            { author: { contains: term, mode: 'insensitive' } },
-          ],
-        }),
-      },
-      orderBy: { createdAt: 'desc' },
+    // Prisma cannot order case-insensitively, so ids and total come from SQL.
+    const matches = [
+      Prisma.sql`TRUE`,
+      ...(ownerId ? [Prisma.sql`"ownerId" = ${ownerId}`] : []),
+      ...(term
+        ? [
+            Prisma.sql`(position(lower(${term}) in lower(name)) > 0
+              OR position(lower(${term}) in lower(author)) > 0)`,
+          ]
+        : []),
+    ];
+    const condition = Prisma.join(matches, ' AND ');
+    const [rows, [{ count }]] = await Promise.all([
+      this.prisma.$queryRaw<{ id: string }[]>`
+        SELECT id FROM "Book"
+        WHERE ${condition}
+        ORDER BY lower(name), id
+        LIMIT ${limit} OFFSET ${(page - 1) * limit}`,
+      this.prisma.$queryRaw<{ count: bigint }[]>`
+        SELECT count(*) AS count FROM "Book" WHERE ${condition}`,
+    ]);
+    const total = Number(count);
+
+    const ids = rows.map(({ id }) => id);
+    const found = await this.prisma.book.findMany({
+      where: { id: { in: ids } },
       include: bookInclude,
     });
+    const byId = new Map(found.map((book) => [book.id, book]));
+    const items = ids.flatMap((id) => byId.get(id) ?? []);
+    return { items, total, page, limit };
   }
 
   async findById(id: string): Promise<BookWithOwner> {
