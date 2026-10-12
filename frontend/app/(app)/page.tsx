@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  keepPreviousData,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { BookCard } from '@/components/book-card';
 import { Button } from '@/components/button';
@@ -18,12 +13,12 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
+import { useRemoveBook } from '@/lib/books';
 import type { Book } from '@/lib/types';
 import { useDebounced } from '@/lib/use-debounced';
 
 export default function BrowsePage() {
   const { data: me } = useMe();
-  const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState('');
   const search = useDebounced(searchInput.trim());
   const [requesting, setRequesting] = useState<Book | null>(null);
@@ -34,10 +29,7 @@ export default function BrowsePage() {
     placeholderData: keepPreviousData,
   });
 
-  const remove = useMutation({
-    mutationFn: (id: string) => api(`/books/${id}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['books'] }),
-  });
+  const remove = useRemoveBook();
 
   return (
     <>
@@ -95,13 +87,9 @@ export default function BrowsePage() {
                 {me?.role === 'ADMIN' && !isOwn && (
                   <Button
                     variant="danger"
-                    loading={remove.isPending && remove.variables === book.id}
-                    disabled={remove.isPending}
-                    onClick={() => {
-                      if (confirm(`Remove “${book.name}”?`)) {
-                        remove.mutate(book.id);
-                      }
-                    }}
+                    loading={remove.isRemoving(book.id)}
+                    disabled={remove.isBusy}
+                    onClick={() => remove.confirmAndRemove(book)}
                   >
                     Remove
                   </Button>

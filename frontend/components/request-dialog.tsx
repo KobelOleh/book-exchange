@@ -1,9 +1,10 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { useMyBooks } from '@/lib/books';
 import type { Book } from '@/lib/types';
 import { BookRow } from './book-card';
 import { Button } from './button';
@@ -21,10 +22,7 @@ export function RequestDialog({
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
 
-  const mine = useQuery({
-    queryKey: ['books', { mine: true }],
-    queryFn: () => api<Book[]>('/books?mine=true'),
-  });
+  const mine = useMyBooks();
 
   useEffect(() => {
     dialog.current?.showModal();

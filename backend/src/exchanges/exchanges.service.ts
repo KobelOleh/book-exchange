@@ -110,23 +110,20 @@ export class ExchangesService {
   }
 
   /** ExchangeRequests the caller has sent. */
-  async listSent(
-    requester: AuthenticatedUser,
-  ): Promise<ExchangeRequestDetails[]> {
-    const requests = await this.prisma.exchangeRequest.findMany({
-      where: { requesterId: requester.id },
-      orderBy: { createdAt: 'desc' },
-      include: exchangeRequestInclude,
-    });
-    return requests.map(toDetails);
+  listSent(requester: AuthenticatedUser): Promise<ExchangeRequestDetails[]> {
+    return this.list({ requesterId: requester.id });
   }
 
   /** ExchangeRequests addressed to the caller as Owner of the Requested Book. */
-  async listReceived(
-    owner: AuthenticatedUser,
+  listReceived(owner: AuthenticatedUser): Promise<ExchangeRequestDetails[]> {
+    return this.list({ requestedBook: { ownerId: owner.id } });
+  }
+
+  private async list(
+    where: Prisma.ExchangeRequestWhereInput,
   ): Promise<ExchangeRequestDetails[]> {
     const requests = await this.prisma.exchangeRequest.findMany({
-      where: { requestedBook: { ownerId: owner.id } },
+      where,
       orderBy: { createdAt: 'desc' },
       include: exchangeRequestInclude,
     });
