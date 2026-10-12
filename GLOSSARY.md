@@ -79,5 +79,5 @@ _Avoid_: Recovery link, Reset token
 | Offered Book          | `offeredBooks`                      |
 | ExchangeRequest       | `ExchangeRequest`                   |
 | Exchange Notification | `ExchangeNotification`              |
-| Profile               | `/profile`, `avatarUrl`             |
-| Password Reset Link   | `PasswordResetToken`                |
+| Profile               | `Profile`, `/profile`, `avatarUrl`  |
+| Password Reset Link   | `PasswordResetLink`                 |

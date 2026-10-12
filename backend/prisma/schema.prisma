@@ -27,7 +27,7 @@ model User {
 
   books                Book[]
   sentExchangeRequests ExchangeRequest[]
-  passwordResetTokens  PasswordResetToken[]
+  passwordResetLinks   PasswordResetLink[]
 }
 
 model Book {
@@ -61,7 +61,7 @@ model ExchangeRequest {
   @@index([requestedBookId])
 }
 
-model PasswordResetToken {
+model PasswordResetLink {
   id        String    @id @default(uuid())
   userId    String
   tokenHash String    @unique

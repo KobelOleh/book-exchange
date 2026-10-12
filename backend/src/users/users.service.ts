@@ -40,15 +40,15 @@ export interface CreateUserInput {
   role?: Role;
 }
 
+export type UpdateUserInput = Partial<CreateUserInput> & {
+  avatarUrl?: string | null;
+};
+
 export type UpdateProfileInput = Pick<
   UpdateUserInput,
   'name' | 'email' | 'avatarUrl'
 > & {
   currentPassword?: string;
-};
-
-export type UpdateUserInput = Partial<CreateUserInput> & {
-  avatarUrl?: string | null;
 };
 
 @Injectable()

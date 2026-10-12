@@ -49,8 +49,8 @@ export class PasswordResetService {
     const token = randomBytes(32).toString('base64url');
     // Only the newest link works: earlier ones are replaced.
     await this.prisma.$transaction([
-      this.prisma.passwordResetToken.deleteMany({ where: { userId: user.id } }),
-      this.prisma.passwordResetToken.create({
+      this.prisma.passwordResetLink.deleteMany({ where: { userId: user.id } }),
+      this.prisma.passwordResetLink.create({
         data: {
           userId: user.id,
           tokenHash: hashToken(token),
@@ -72,14 +72,16 @@ export class PasswordResetService {
   /** Sets a new password and ends every earlier session of that User. */
   async reset(token: string, password: string): Promise<void> {
     const tokenHash = hashToken(token);
-    const validLink = {
+    const validLink = () => ({
       tokenHash,
       usedAt: null,
       expiresAt: { gt: new Date() },
-    };
+    });
     // Cheap check first, so bogus links do not cost a password hash each.
     if (
-      !(await this.prisma.passwordResetToken.findFirst({ where: validLink }))
+      !(await this.prisma.passwordResetLink.findFirst({
+        where: validLink(),
+      }))
     ) {
       throw new BadRequestException('Invalid or expired password reset link');
     }
@@ -87,8 +89,8 @@ export class PasswordResetService {
 
     const reset = await this.prisma.$transaction(async (tx) => {
       // Marking the link used first makes it single-use even under races.
-      const used = await tx.passwordResetToken.updateManyAndReturn({
-        where: { ...validLink, expiresAt: { gt: new Date() } },
+      const used = await tx.passwordResetLink.updateManyAndReturn({
+        where: validLink(),
         data: { usedAt: new Date() },
         select: { userId: true },
       });

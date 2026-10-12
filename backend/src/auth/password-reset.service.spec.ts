@@ -83,7 +83,7 @@ describe('PasswordResetService', () => {
   it('rejects an expired or unknown Password Reset Link', async () => {
     await auth.register(olena);
     await passwordReset.request(olena.email);
-    await prisma.passwordResetToken.updateMany({
+    await prisma.passwordResetLink.updateMany({
       data: { expiresAt: new Date(Date.now() - 1000) },
     });
 

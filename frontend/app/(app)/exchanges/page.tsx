@@ -1,49 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { RequestCard } from '@/components/request-card';
-import {
-  EmptyState,
-  ErrorAlert,
-  PageHeader,
-  RowsSkeleton,
-} from '@/components/ui';
-import { api } from '@/lib/api';
-import type { ExchangeRequest } from '@/lib/types';
-
-function RequestList({
-  title,
-  kind,
-  emptyText,
-}: {
-  title: string;
-  kind: 'sent' | 'received';
-  emptyText: string;
-}) {
-  const requests = useQuery({
-    queryKey: ['exchanges', kind],
-    queryFn: () => api<ExchangeRequest[]>(`/exchange-requests/${kind}`),
-  });
-
-  return (
-    <section className="section">
-      <div className="section__title">
-        <h2>{title}</h2>
-        {requests.data && <span className="count">{requests.data.length}</span>}
-      </div>
-      <ErrorAlert error={requests.error} />
-      {requests.isPending && <RowsSkeleton />}
-      {requests.data?.length === 0 && (
-        <EmptyState title="Nothing here yet">{emptyText}</EmptyState>
-      )}
-      <div className="record-list">
-        {requests.data?.map((request) => (
-          <RequestCard key={request.id} request={request} kind={kind} />
-        ))}
-      </div>
-    </section>
-  );
-}
+import { PageHeader } from '@/components/ui';
+import { RequestList } from '@/components/request-list';
 
 export default function ExchangesPage() {
   return (
