@@ -24,6 +24,10 @@ _Avoid_: Seller, lender, holder
 The User who sends an ExchangeRequest. A relationship to an ExchangeRequest, not a separate kind of person.
 _Avoid_: Sender, buyer, borrower
 
+**Profile**:
+The page where a User sees and changes their own name, email and avatar, and sees how many Books they own and which ExchangeRequests they have received.
+_Avoid_: Account, Settings
+
 ## Books
 
 **Book**:
@@ -48,6 +52,10 @@ _Avoid_: Trade, swap, offer, order
 The message the Owner receives about an ExchangeRequest, naming the Requester and listing the Offered Books.
 _Avoid_: Exchange email, alert
 
+**Password Reset Link**:
+A one-time link with a limited lifetime that a User receives to set a new password after forgetting the old one.
+_Avoid_: Recovery link, Reset token
+
 ## Relationships
 
 - A **User** owns zero or more **Books**; each **Book** has exactly one **Owner**.
@@ -57,6 +65,7 @@ _Avoid_: Exchange email, alert
 - Every **Offered Book** belongs to the **Requester**; none belongs to the recipient.
 - The **Requester** and the **Owner** of an **ExchangeRequest** are always different **Users**.
 - Removing a **User** removes their **Books** and every **ExchangeRequest** they sent or received.
+- Setting a new password through a **Password Reset Link** ends all of that **User**'s earlier sessions.
 - An **Admin** is a **User** with the Admin **Role**; an Admin can also own Books and send ExchangeRequests.
 
 ## Naming in code
@@ -70,3 +79,5 @@ _Avoid_: Exchange email, alert
 | Offered Book          | `offeredBooks`                      |
 | ExchangeRequest       | `ExchangeRequest`                   |
 | Exchange Notification | `ExchangeNotification`              |
+| Profile               | `/profile`, `avatarUrl`             |
+| Password Reset Link   | `PasswordResetToken`                |
