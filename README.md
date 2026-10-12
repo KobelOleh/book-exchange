@@ -86,3 +86,14 @@ The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `ba
 - Swagger (`/docs`) is disabled when `NODE_ENV=production`. No CORS is enabled: the browser only talks to the Next origin, which proxies `/api`.
 - `backend/.env` is git-ignored; only `.env.example` files are committed. The Postgres port is bound to `127.0.0.1` for local development only.
 - The seed resets the password of an existing account when it promotes `ADMIN_EMAIL` to Admin.
+
+## Known limitations
+
+- **Deleting an offered book.** If a book that is part of an existing exchange
+  request's offer is later deleted, the request simply loses that book and may
+  end up with an empty offer. The specification does not define this case, so
+  it is left as is. A production version would either block deleting such a book
+  or cancel the affected requests.
+  -eting such a book
+  The owner notification is printed to the console instead of
+  being sent by email, as the task allows.
