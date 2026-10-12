@@ -41,7 +41,7 @@ backend still verifies the token on every call. Port 3100 is used because
 Windows can reserve 3000 (check `netsh int ipv4 show excludedportrange protocol=tcp`).
 
 Pages: `/login`, `/register`, `/` (browse, search, request an exchange),
-`/my-books`, `/exchanges`, `/admin/users` (Admin only).
+`/my-books`, `/exchanges`, `/profile` (edit name, email and avatar URL; see your Book count and received requests), `/forgot-password` and `/reset-password` (Password Reset Link), `/admin/users` (Admin only).
 
 ## Useful commands
 
@@ -58,14 +58,16 @@ Pages: `/login`, `/register`, `/` (browse, search, request an exchange),
 
 All routes except `/api/health`, `/api/auth/register` and `/api/auth/login` require the auth cookie.
 
-| Route                                                              | What                                                                               |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
-| `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/me` | authentication                                                                     |
-| `GET /api/books?search=&mine=true`, `GET /api/books/:id`           | browse and search Books                                                            |
-| `POST /api/books`, `DELETE /api/books/:id`                         | add a Book; remove own Book (Admin: any)                                           |
-| `POST /api/exchange-requests`                                      | `{ requestedBookId, offeredBookIds[] }`; the Owner is notified (logged to console) |
-| `GET /api/exchange-requests/sent`, `/received`                     | the caller's ExchangeRequests                                                      |
-| `/api/users` (Admin only)                                          | list, create, update, delete Users                                                 |
+| Route                                                              | What                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/me` | authentication                                                                       |
+| `PATCH /api/auth/me`                                               | edit own name, email, avatar URL (`null` clears it); `GET` also returns `booksCount` |
+| `POST /api/auth/forgot-password`, `/reset-password`                | request a Password Reset Link (always `204`); set a new password with it             |
+| `GET /api/books?search=&mine=true`, `GET /api/books/:id`           | browse and search Books                                                              |
+| `POST /api/books`, `DELETE /api/books/:id`                         | add a Book; remove own Book (Admin: any)                                             |
+| `POST /api/exchange-requests`                                      | `{ requestedBookId, offeredBookIds[] }`; the Owner is notified (logged to console)   |
+| `GET /api/exchange-requests/sent`, `/received`                     | the caller's ExchangeRequests                                                        |
+| `/api/users` (Admin only)                                          | list, create, update, delete Users                                                   |
 
 The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `backend/.env`, then run `npx prisma db seed`.
 
@@ -82,6 +84,8 @@ The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `ba
 - Auth is an HttpOnly, `SameSite=Lax` cookie (`Secure` when `NODE_ENV=production`) holding an HS256 JWT. `JWT_SECRET` must be at least 32 characters. The role is re-read from the database on every request, so role changes and removals apply immediately.
 - Logout clears the cookie but tokens are stateless: a copied token stays valid until `JWT_EXPIRES_IN` passes. Keep that short if it matters.
 - Login is limited per account (`AUTH_RATE_LIMIT` attempts per minute, default 10), not per IP, because the Next proxy does not provide a trustworthy client address. The trade-off: someone can briefly lock a known email out of logging in.
+- A Password Reset Link is random, stored only as a SHA-256 hash, works once, expires after an hour and is written to the console. Resetting a password ends every earlier session (tokens carry the User's `sessionVersion`, which the reset increments). Requesting a link never reveals whether the email is registered. Set `FRONTEND_URL` so the link points at the Next app.
+- Changing the email on the Profile takes effect immediately; the new address is not confirmed by email.
 - Emails are case-insensitive (stored lowercased). Passwords are bcrypt-hashed; the hash never leaves the service.
 - Swagger (`/docs`) is disabled when `NODE_ENV=production`. No CORS is enabled: the browser only talks to the Next origin, which proxies `/api`.
 - `backend/.env` is git-ignored; only `.env.example` files are committed. The Postgres port is bound to `127.0.0.1` for local development only.
@@ -97,3 +101,8 @@ The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `ba
   -eting such a book
   The owner notification is printed to the console instead of
   being sent by email, as the task allows.
+
+## Known limitations
+
+- **Deleting an offered book.** If a book that is part of an existing exchange request's offer is later deleted, the request simply loses that book and may end up with an empty offer. The specification does not define this case, so it is left as is. A production version would either block deleting such a book or cancel the affected requests.
+- **Email delivery.** The Exchange Notification and the Password Reset Link are printed to the console instead of being sent by email, as the task allows.

@@ -89,6 +89,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         <Button type="submit" loading={submit.isPending}>
           {isRegister ? 'Register' : 'Log in'}
         </Button>
+        {!isRegister && (
+          <Link href="/forgot-password" className="auth__footer muted">
+            Forgot your password?
+          </Link>
+        )}
       </form>
       <p className="auth__footer muted">
         {isRegister ? 'Already registered? ' : 'No account yet? '}

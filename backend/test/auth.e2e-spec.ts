@@ -4,6 +4,7 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/app.setup.js';
 import { Role } from '../src/generated/prisma/client.js';
+import { PasswordResetNotifier } from '../src/auth/password-reset-notifier.js';
 import { PrismaService } from '../src/prisma/prisma.service.js';
 import { UsersService } from '../src/users/users.service.js';
 import { resetDatabase } from './support/test-module.js';
@@ -144,6 +145,53 @@ describe('Authentication and roles (HTTP)', () => {
       .patch('/api/auth/me')
       .send({ email: 'andrii@example.com' })
       .expect(409);
+  });
+
+  it('resets a forgotten password through the emailed link and signs out older sessions', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent.post('/api/auth/register').send(olena).expect(201);
+    const links: string[] = [];
+    vi.spyOn(app.get(PasswordResetNotifier), 'notify').mockImplementation(
+      ({ resetLink }) => {
+        links.push(resetLink);
+      },
+    );
+
+    await request(app.getHttpServer())
+      .post('/api/auth/forgot-password')
+      .send({ email: olena.email })
+      .expect(204);
+    await request(app.getHttpServer())
+      .post('/api/auth/reset-password')
+      .send({
+        token: new URL(links[0]).searchParams.get('token'),
+        password: 'battery-staple',
+      })
+      .expect(204);
+
+    await agent.get('/api/auth/me').expect(401);
+    await request(app.getHttpServer())
+      .post('/api/auth/login')
+      .send({ email: olena.email, password: 'battery-staple' })
+      .expect(200);
+  });
+
+  it('answers a password reset request for an unknown email like a known one', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/forgot-password')
+      .send({ email: 'nobody@example.com' })
+      .expect(204);
+  });
+
+  it('refuses to reset a password with an invalid link or a weak password', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/reset-password')
+      .send({ token: 'not-a-real-token', password: 'battery-staple' })
+      .expect(400);
+    await request(app.getHttpServer())
+      .post('/api/auth/reset-password')
+      .send({ token: 'not-a-real-token', password: 'short' })
+      .expect(400);
   });
 
   it('does not let a visitor choose their own role while registering', async () => {

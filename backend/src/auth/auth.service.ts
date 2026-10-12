@@ -21,6 +21,8 @@ export interface AuthSession {
 
 interface AccessTokenPayload {
   sub: string;
+  /** The User's session version when the token was issued. */
+  ver?: number;
 }
 
 @Injectable()
@@ -47,7 +49,12 @@ export class AuthService {
     const payload = await this.verifyToken(accessToken);
 
     try {
-      const { id, role } = await this.users.findById(payload.sub);
+      const { id, role, sessionVersion } = await this.users.findSession(
+        payload.sub,
+      );
+      if ((payload.ver ?? 0) !== sessionVersion) {
+        throw new UnauthorizedException('Session has ended');
+      }
       return { id, role };
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -66,7 +73,8 @@ export class AuthService {
   }
 
   private async startSession(user: PublicUser): Promise<AuthSession> {
-    const payload: AccessTokenPayload = { sub: user.id };
+    const { sessionVersion } = await this.users.findSession(user.id);
+    const payload: AccessTokenPayload = { sub: user.id, ver: sessionVersion };
     return { user, accessToken: await this.jwt.signAsync(payload) };
   }
 }

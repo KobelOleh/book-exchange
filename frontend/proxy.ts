@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const ACCESS_TOKEN_COOKIE = 'access_token';
-const PUBLIC_PATHS = ['/login', '/register'];
+const PUBLIC_PATHS = [
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/reset-password',
+];
 
 /**
  * Sends visitors without an access-token cookie to the login page. This is

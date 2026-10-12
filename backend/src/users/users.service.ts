@@ -133,6 +133,20 @@ export class UsersService {
     return { ...publicUser, booksCount: _count.books };
   }
 
+  /** What a session needs to be valid: who the User is and which sessions are current. */
+  async findSession(
+    id: string,
+  ): Promise<AuthenticatedUser & { sessionVersion: number }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { id: true, role: true, sessionVersion: true },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
   async verifyCredentials(
     email: string,
     password: string,
@@ -157,7 +171,7 @@ export class UsersService {
   }
 }
 
-function hashPassword(password: string): Promise<string> {
+export function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, PASSWORD_HASH_ROUNDS);
 }
 
@@ -169,7 +183,7 @@ function getDummyPasswordHash(): Promise<string> {
 }
 
 /** Emails are case-insensitive for people, so store and look them up lowercased. */
-function normalizeEmail(email: string): string {
+export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 

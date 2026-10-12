@@ -7,6 +7,8 @@ import { UsersModule } from '../users/users.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { JwtAuthGuard } from './jwt-auth.guard.js';
+import { PasswordResetNotifier } from './password-reset-notifier.js';
+import { PasswordResetService } from './password-reset.service.js';
 import { RolesGuard } from './roles.guard.js';
 
 const MIN_JWT_SECRET_LENGTH = 32;
@@ -51,6 +53,8 @@ function getJwtSecret(config: ConfigService): string {
   controllers: [AuthController],
   providers: [
     AuthService,
+    PasswordResetService,
+    PasswordResetNotifier,
     // Order matters: authenticate first, then check roles.
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
