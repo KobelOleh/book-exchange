@@ -40,6 +40,13 @@ export interface CreateUserInput {
   role?: Role;
 }
 
+export type UpdateProfileInput = Pick<
+  UpdateUserInput,
+  'name' | 'email' | 'avatarUrl'
+> & {
+  currentPassword?: string;
+};
+
 export type UpdateUserInput = Partial<CreateUserInput> & {
   avatarUrl?: string | null;
 };
@@ -89,13 +96,41 @@ export class UsersService {
         data: {
           ...data,
           ...(data.email && { email: normalizeEmail(data.email) }),
-          ...(password && { passwordHash: await hashPassword(password) }),
+          // A new password ends the User's other sessions.
+          ...(password && {
+            passwordHash: await hashPassword(password),
+            sessionVersion: { increment: 1 },
+          }),
         },
         select: publicUserSelect,
       });
     } catch (error) {
       throw translatePrismaError(error);
     }
+  }
+
+  /**
+   * Edits the caller's own Profile. Changing the email also needs the current
+   * password, so a stolen session cannot redirect password resets to the thief.
+   */
+  async updateProfile(
+    actor: AuthenticatedUser,
+    { currentPassword, ...changes }: UpdateProfileInput,
+  ): Promise<PublicUser> {
+    if (changes.email !== undefined) {
+      const { email } = await this.findById(actor.id);
+      if (normalizeEmail(changes.email) !== email) {
+        if (!currentPassword) {
+          throw new ForbiddenException(
+            'Enter your current password to change your email',
+          );
+        }
+        if (!(await this.verifyCredentials(email, currentPassword))) {
+          throw new ForbiddenException('Current password is incorrect');
+        }
+      }
+    }
+    return this.update(actor, actor.id, changes);
   }
 
   async remove(actor: AuthenticatedUser, id: string): Promise<void> {

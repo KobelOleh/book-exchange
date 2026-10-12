@@ -230,6 +230,61 @@ describe('UsersService', () => {
     });
   });
 
+  it('ends the sessions of a User whose password an Admin replaced', async () => {
+    const created = await users.create({
+      email: 'olena@example.com',
+      name: 'Olena',
+      password: 'correct-horse',
+    });
+    const before = await users.findSession(created.id);
+
+    await users.update(actor, created.id, { password: 'battery-staple' });
+
+    expect((await users.findSession(created.id)).sessionVersion).toBe(
+      before.sessionVersion + 1,
+    );
+  });
+
+  it('changes the email on the Profile only with the current password', async () => {
+    const created = await users.create({
+      email: 'olena@example.com',
+      name: 'Olena',
+      password: 'correct-horse',
+    });
+    const self: AuthenticatedUser = { id: created.id, role: Role.USER };
+
+    await expect(
+      users.updateProfile(self, { email: 'new@example.com' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      users.updateProfile(self, {
+        email: 'new@example.com',
+        currentPassword: 'wrong-password',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+
+    const updated = await users.updateProfile(self, {
+      email: 'New@Example.com',
+      currentPassword: 'correct-horse',
+    });
+    expect(updated.email).toBe('new@example.com');
+  });
+
+  it('lets a User rename themselves on the Profile without a password', async () => {
+    const created = await users.create({
+      email: 'olena@example.com',
+      name: 'Olena',
+      password: 'correct-horse',
+    });
+
+    const updated = await users.updateProfile(
+      { id: created.id, role: Role.USER },
+      { name: 'Olena K.', email: 'OLENA@example.com' },
+    );
+
+    expect(updated.name).toBe('Olena K.');
+  });
+
   it('forbids an Admin from changing their own role', async () => {
     const admin = await users.create({
       email: 'admin@example.com',

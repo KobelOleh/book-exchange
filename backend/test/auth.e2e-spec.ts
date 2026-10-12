@@ -85,7 +85,7 @@ describe('Authentication and roles (HTTP)', () => {
     const me = await agent.get('/api/auth/me').expect(200);
 
     for (const { body } of [registered, login, me]) {
-      expect(JSON.stringify(body)).not.toMatch(/passwordHash|$2[aby]$/);
+      expect(JSON.stringify(body)).not.toMatch(/passwordHash|\$2[aby]\$/);
     }
   });
 
@@ -106,6 +106,7 @@ describe('Authentication and roles (HTTP)', () => {
       .send({
         name: 'Olena K.',
         email: 'Olena.K@example.com',
+        currentPassword: olena.password,
         avatarUrl: 'https://example.com/olena.png',
       })
       .expect(200);
@@ -133,6 +134,22 @@ describe('Authentication and roles (HTTP)', () => {
       .expect(400);
   });
 
+  it('asks for the current password before changing the Profile email', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent.post('/api/auth/register').send(olena).expect(201);
+
+    await agent
+      .patch('/api/auth/me')
+      .send({ email: 'thief@example.com' })
+      .expect(403);
+    await agent
+      .patch('/api/auth/me')
+      .send({ email: 'thief@example.com', currentPassword: 'wrong-password' })
+      .expect(403);
+    const me = await agent.get('/api/auth/me').expect(200);
+    expect(me.body.email).toBe(olena.email);
+  });
+
   it('refuses a Profile email that another User already uses', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/register')
@@ -143,7 +160,7 @@ describe('Authentication and roles (HTTP)', () => {
 
     await agent
       .patch('/api/auth/me')
-      .send({ email: 'andrii@example.com' })
+      .send({ email: 'andrii@example.com', currentPassword: olena.password })
       .expect(409);
   });
 
@@ -161,6 +178,8 @@ describe('Authentication and roles (HTTP)', () => {
       .post('/api/auth/forgot-password')
       .send({ email: olena.email })
       .expect(204);
+    // The reset is prepared after the response has been sent.
+    await vi.waitFor(() => expect(links).toHaveLength(1));
     await request(app.getHttpServer())
       .post('/api/auth/reset-password')
       .send({
@@ -174,6 +193,17 @@ describe('Authentication and roles (HTTP)', () => {
       .post('/api/auth/login')
       .send({ email: olena.email, password: 'battery-staple' })
       .expect(200);
+  });
+
+  it('limits how many reset links one email can request', async () => {
+    const send = () =>
+      request(app.getHttpServer())
+        .post('/api/auth/forgot-password')
+        .send({ email: 'flooded@example.com' });
+
+    for (let attempt = 0; attempt < 3; attempt++) await send().expect(204);
+
+    await send().expect(429);
   });
 
   it('answers a password reset request for an unknown email like a known one', async () => {

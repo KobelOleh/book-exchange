@@ -1,5 +1,11 @@
 import { PartialType, PickType } from '@nestjs/swagger';
-import { IsOptional, IsUrl, MaxLength } from 'class-validator';
+import {
+  IsByteLength,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
 import { CreateUserDto } from './create-user.dto.js';
 
 /** What a User may change about themselves; the role and password are not included. */
@@ -11,4 +17,10 @@ export class UpdateProfileDto extends PartialType(
   @IsUrl({ protocols: ['http', 'https'], require_protocol: true })
   @MaxLength(2048)
   avatarUrl?: string | null;
+
+  /** Required when the email changes. */
+  @IsOptional()
+  @IsString()
+  @IsByteLength(0, 72)
+  currentPassword?: string;
 }

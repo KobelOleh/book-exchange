@@ -20,14 +20,22 @@ function ProfileForm({ profile }: { profile: Profile }) {
   const [name, setName] = useState(profile.name);
   const [email, setEmail] = useState(profile.email);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? '');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const emailChanged = email.trim().toLowerCase() !== profile.email;
 
   const save = useMutation({
     mutationFn: () =>
       api<Profile>('/auth/me', {
         method: 'PATCH',
-        body: { name, email, avatarUrl: avatarUrl.trim() || null },
+        body: {
+          name,
+          email,
+          avatarUrl: avatarUrl.trim() || null,
+          currentPassword: emailChanged ? currentPassword : undefined,
+        },
       }),
     onSuccess: (updated) => {
+      setCurrentPassword('');
       queryClient.setQueryData(PROFILE_KEY, updated);
       queryClient.setQueryData(ME_KEY, updated);
     },
@@ -69,6 +77,20 @@ function ProfileForm({ profile }: { profile: Profile }) {
             onChange={(e) => setEmail(e.target.value)}
           />
         </label>
+        {emailChanged && (
+          <label className="field">
+            Current password (needed to change your email)
+            <input
+              className="input"
+              type="password"
+              required
+              maxLength={72}
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </label>
+        )}
         <label className="field">
           Avatar URL
           <input

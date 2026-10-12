@@ -1,4 +1,9 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHash, randomBytes } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -13,12 +18,25 @@ function hashToken(token: string): string {
 
 @Injectable()
 export class PasswordResetService {
+  private readonly logger = new Logger(PasswordResetService.name);
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(ConfigService) private readonly config: ConfigService,
     @Inject(PasswordResetNotifier)
     private readonly notifier: PasswordResetNotifier,
   ) {}
+
+  /**
+   * Starts a reset without making the caller wait for it. Registered and
+   * unregistered emails therefore take the same time to answer, so response
+   * timing cannot reveal which emails have an account.
+   */
+  requestInBackground(email: string): void {
+    this.request(email).catch((error: unknown) => {
+      this.logger.error('Password reset request failed', error);
+    });
+  }
 
   /** Sends a Password Reset Link if the email is registered; says nothing either way. */
   async request(email: string): Promise<void> {
@@ -53,16 +71,24 @@ export class PasswordResetService {
 
   /** Sets a new password and ends every earlier session of that User. */
   async reset(token: string, password: string): Promise<void> {
+    const tokenHash = hashToken(token);
+    const validLink = {
+      tokenHash,
+      usedAt: null,
+      expiresAt: { gt: new Date() },
+    };
+    // Cheap check first, so bogus links do not cost a password hash each.
+    if (
+      !(await this.prisma.passwordResetToken.findFirst({ where: validLink }))
+    ) {
+      throw new BadRequestException('Invalid or expired password reset link');
+    }
     const passwordHash = await hashPassword(password);
 
     const reset = await this.prisma.$transaction(async (tx) => {
       // Marking the link used first makes it single-use even under races.
       const used = await tx.passwordResetToken.updateManyAndReturn({
-        where: {
-          tokenHash: hashToken(token),
-          usedAt: null,
-          expiresAt: { gt: new Date() },
-        },
+        where: { ...validLink, expiresAt: { gt: new Date() } },
         data: { usedAt: new Date() },
         select: { userId: true },
       });

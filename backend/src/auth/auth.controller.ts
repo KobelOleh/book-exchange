@@ -10,7 +10,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Response } from 'express';
 import type { AuthenticatedUser } from '../common/authenticated-user.js';
 import { UpdateProfileDto } from '../users/dto/update-profile.dto.js';
@@ -28,6 +28,9 @@ import { RegisterDto } from './dto/register.dto.js';
 import { ResetPasswordDto } from './dto/reset-password.dto.js';
 import { PasswordResetService } from './password-reset.service.js';
 import { Public } from './public.decorator.js';
+
+/** Reset links one email may request per hour. */
+const FORGOT_PASSWORD_LIMIT = 3;
 
 @Controller('auth')
 export class AuthController {
@@ -66,13 +69,17 @@ export class AuthController {
     return user;
   }
 
-  /** Answers the same whether or not the email is registered. */
+  /**
+   * Answers the same, and as fast, whether or not the email is registered.
+   * Limited per email so nobody can flood a mailbox with reset links.
+   */
   @Public()
   @UseGuards(LoginThrottlerGuard)
+  @Throttle({ default: { limit: FORGOT_PASSWORD_LIMIT, ttl: 60 * 60_000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.NO_CONTENT)
-  forgotPassword(@Body() { email }: ForgotPasswordDto): Promise<void> {
-    return this.passwordReset.request(email);
+  forgotPassword(@Body() { email }: ForgotPasswordDto): void {
+    this.passwordReset.requestInBackground(email);
   }
 
   @Public()
@@ -99,7 +106,7 @@ export class AuthController {
     @CurrentUser() actor: AuthenticatedUser,
     @Body() dto: UpdateProfileDto,
   ): Promise<Profile> {
-    await this.users.update(actor, actor.id, dto);
+    await this.users.updateProfile(actor, dto);
     return this.users.findProfile(actor.id);
   }
 }
