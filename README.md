@@ -95,3 +95,7 @@ The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `ba
 
 - **Deleting an offered book.** If a book that is part of an existing exchange request's offer is later deleted, the request simply loses that book and may end up with an empty offer. The specification does not define this case, so it is left as is. A production version would either block deleting such a book or cancel the affected requests.
 - **Email delivery.** The Exchange Notification and the Password Reset Link are printed to the console instead of being sent by email, as the task allows.
+- **Rate limits by IP.** `register` and `reset-password` are limited per client address, but behind the Next proxy every visitor shares one address, so the limit is shared too.
+- **Reset token in the URL and the log.** The Password Reset Link stays in browser history, and the console "email" prints the full link; a real mailer must not log it.
+- **External images.** Book covers and avatars are loaded from user-supplied URLs, so those hosts can see the viewer's IP address.
+- **Password guessing on the Profile.** `PATCH /api/auth/me` has no attempt limit on `currentPassword`; guessing needs a valid session first.
