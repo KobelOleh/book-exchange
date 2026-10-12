@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
 import { api, ApiError } from '@/lib/api';
 import { useMe } from '@/lib/auth';
@@ -63,7 +64,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
           <div className="nav__user">
-            <span className="nav__who">{me.name}</span>
+            <Link href="/profile" className="nav__profile">
+              <Avatar url={me.avatarUrl} name={me.name} />
+              <span className="nav__who">{me.name}</span>
+            </Link>
             {me.role === 'ADMIN' && <span className="badge">Admin</span>}
             <Button variant="secondary" size="sm" onClick={logout}>
               Log out

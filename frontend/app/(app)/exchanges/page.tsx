@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { BookRow } from '@/components/book-card';
+import { RequestCard } from '@/components/request-card';
 import {
   EmptyState,
   ErrorAlert,
@@ -10,44 +10,6 @@ import {
 } from '@/components/ui';
 import { api } from '@/lib/api';
 import type { ExchangeRequest } from '@/lib/types';
-
-function RequestCard({
-  request,
-  kind,
-}: {
-  request: ExchangeRequest;
-  kind: 'sent' | 'received';
-}) {
-  return (
-    <article className="card record">
-      <div className="record__head">
-        <p>
-          {kind === 'sent' ? (
-            <>
-              You asked <strong>{request.requestedBook.owner.name}</strong> for
-              “{request.requestedBook.name}”
-            </>
-          ) : (
-            <>
-              <strong>{request.requester.name}</strong> (
-              {request.requester.email}) wants your “
-              {request.requestedBook.name}”
-            </>
-          )}
-        </p>
-        <time className="record__time" dateTime={request.createdAt}>
-          {new Date(request.createdAt).toLocaleString()}
-        </time>
-      </div>
-      <p className="record__label">In return, offered</p>
-      <div className="offer-list">
-        {request.offeredBooks.map((book) => (
-          <BookRow key={book.id} book={book} />
-        ))}
-      </div>
-    </article>
-  );
-}
 
 function RequestList({
   title,

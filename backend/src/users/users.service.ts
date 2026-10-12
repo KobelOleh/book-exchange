@@ -16,6 +16,7 @@ const publicUserSelect = {
   id: true,
   email: true,
   name: true,
+  avatarUrl: true,
   role: true,
   createdAt: true,
 } satisfies Prisma.UserSelect;
@@ -24,6 +25,14 @@ export type PublicUser = Prisma.UserGetPayload<{
   select: typeof publicUserSelect;
 }>;
 
+const profileSelect = {
+  ...publicUserSelect,
+  _count: { select: { books: true } },
+} satisfies Prisma.UserSelect;
+
+/** A User as seen on their own Profile: includes how many Books they own. */
+export type Profile = PublicUser & { booksCount: number };
+
 export interface CreateUserInput {
   email: string;
   name: string;
@@ -31,7 +40,9 @@ export interface CreateUserInput {
   role?: Role;
 }
 
-export type UpdateUserInput = Partial<CreateUserInput>;
+export type UpdateUserInput = Partial<CreateUserInput> & {
+  avatarUrl?: string | null;
+};
 
 @Injectable()
 export class UsersService {
@@ -108,6 +119,18 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return user;
+  }
+
+  async findProfile(id: string): Promise<Profile> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: profileSelect,
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const { _count, ...publicUser } = user;
+    return { ...publicUser, booksCount: _count.books };
   }
 
   async verifyCredentials(

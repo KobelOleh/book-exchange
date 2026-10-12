@@ -4,8 +4,13 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  avatarUrl: string | null;
   role: Role;
   createdAt: string;
+}
+
+export interface Profile extends User {
+  booksCount: number;
 }
 
 export interface Book {

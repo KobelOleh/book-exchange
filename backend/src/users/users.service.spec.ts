@@ -193,6 +193,43 @@ describe('UsersService', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('sets and clears the avatar of a User', async () => {
+    const created = await users.create({
+      email: 'olena@example.com',
+      name: 'Olena',
+      password: 'correct-horse',
+    });
+    const avatarUrl = 'https://example.com/olena.png';
+
+    const withAvatar = await users.update(actor, created.id, { avatarUrl });
+    const cleared = await users.update(actor, created.id, { avatarUrl: null });
+
+    expect(withAvatar.avatarUrl).toBe(avatarUrl);
+    expect(cleared.avatarUrl).toBeNull();
+  });
+
+  it('counts the Books a User owns on their Profile', async () => {
+    const prisma = moduleRef.get(PrismaService);
+    const created = await users.create({
+      email: 'olena@example.com',
+      name: 'Olena',
+      password: 'correct-horse',
+    });
+    await prisma.book.createMany({
+      data: ['Kobzar', 'Dune'].map((name) => ({
+        name,
+        author: 'Anon',
+        photoUrl: 'https://example.com/cover.png',
+        ownerId: created.id,
+      })),
+    });
+
+    expect(await users.findProfile(created.id)).toEqual({
+      ...created,
+      booksCount: 2,
+    });
+  });
+
   it('forbids an Admin from changing their own role', async () => {
     const admin = await users.create({
       email: 'admin@example.com',

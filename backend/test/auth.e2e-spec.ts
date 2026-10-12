@@ -48,7 +48,7 @@ describe('Authentication and roles (HTTP)', () => {
       role: 'USER',
     });
     expect(registered.body).not.toHaveProperty('passwordHash');
-    expect(me.body).toEqual(registered.body);
+    expect(me.body).toEqual({ ...registered.body, booksCount: 0 });
   });
 
   it('keeps the access token out of reach of page scripts', async () => {
@@ -88,6 +88,64 @@ describe('Authentication and roles (HTTP)', () => {
     }
   });
 
+  it('lets a User edit their own Profile and reports how many Books they own', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent.post('/api/auth/register').send(olena).expect(201);
+    await agent
+      .post('/api/books')
+      .send({
+        name: 'Kobzar',
+        author: 'Taras Shevchenko',
+        photoUrl: 'https://example.com/kobzar.png',
+      })
+      .expect(201);
+
+    const updated = await agent
+      .patch('/api/auth/me')
+      .send({
+        name: 'Olena K.',
+        email: 'Olena.K@example.com',
+        avatarUrl: 'https://example.com/olena.png',
+      })
+      .expect(200);
+
+    expect(updated.body).toMatchObject({
+      name: 'Olena K.',
+      email: 'olena.k@example.com',
+      avatarUrl: 'https://example.com/olena.png',
+      role: 'USER',
+      booksCount: 1,
+    });
+    expect((await agent.get('/api/auth/me').expect(200)).body).toEqual(
+      updated.body,
+    );
+  });
+
+  it('does not let a User change their own role or password through the Profile', async () => {
+    const agent = request.agent(app.getHttpServer());
+    await agent.post('/api/auth/register').send(olena).expect(201);
+
+    await agent.patch('/api/auth/me').send({ role: 'ADMIN' }).expect(400);
+    await agent
+      .patch('/api/auth/me')
+      .send({ password: 'new-password-1' })
+      .expect(400);
+  });
+
+  it('refuses a Profile email that another User already uses', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({ ...olena, email: 'andrii@example.com', name: 'Andrii' })
+      .expect(201);
+    const agent = request.agent(app.getHttpServer());
+    await agent.post('/api/auth/register').send(olena).expect(201);
+
+    await agent
+      .patch('/api/auth/me')
+      .send({ email: 'andrii@example.com' })
+      .expect(409);
+  });
+
   it('does not let a visitor choose their own role while registering', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/register')
@@ -109,7 +167,7 @@ describe('Authentication and roles (HTTP)', () => {
     const me = await agent.get('/api/auth/me').expect(200);
 
     expect(login.body).toMatchObject({ email: olena.email });
-    expect(me.body).toEqual(login.body);
+    expect(me.body).toEqual({ ...login.body, booksCount: 0 });
   });
 
   it('refuses to log in with a wrong password', async () => {

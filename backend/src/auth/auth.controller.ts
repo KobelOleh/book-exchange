@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Inject,
+  Patch,
   Post,
   Res,
   UseGuards,
@@ -12,7 +13,8 @@ import {
 import { ThrottlerGuard } from '@nestjs/throttler';
 import type { Response } from 'express';
 import type { AuthenticatedUser } from '../common/authenticated-user.js';
-import { PublicUser, UsersService } from '../users/users.service.js';
+import { UpdateProfileDto } from '../users/dto/update-profile.dto.js';
+import { Profile, PublicUser, UsersService } from '../users/users.service.js';
 import {
   clearAccessTokenCookie,
   setAccessTokenCookie,
@@ -66,7 +68,16 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@CurrentUser() actor: AuthenticatedUser): Promise<PublicUser> {
-    return this.users.findById(actor.id);
+  me(@CurrentUser() actor: AuthenticatedUser): Promise<Profile> {
+    return this.users.findProfile(actor.id);
+  }
+
+  @Patch('me')
+  async updateMe(
+    @CurrentUser() actor: AuthenticatedUser,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<Profile> {
+    await this.users.update(actor, actor.id, dto);
+    return this.users.findProfile(actor.id);
   }
 }
