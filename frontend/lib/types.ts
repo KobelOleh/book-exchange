@@ -1,0 +1,40 @@
+export type Role = 'USER' | 'ADMIN';
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  createdAt: string;
+}
+
+export interface Book {
+  id: string;
+  name: string;
+  author: string;
+  photoUrl: string;
+  ownerId: string;
+  createdAt: string;
+  owner: { id: string; name: string };
+}
+
+export interface ExchangeBook {
+  id: string;
+  name: string;
+  author: string;
+  photoUrl: string;
+}
+
+export interface Person {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface ExchangeRequest {
+  id: string;
+  createdAt: string;
+  requester: Person;
+  requestedBook: ExchangeBook & { owner: Person };
+  offeredBooks: ExchangeBook[];
+}
