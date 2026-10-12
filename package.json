@@ -1,0 +1,14 @@
+{
+  "name": "book-exchange",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "typecheck": "npm --prefix backend run typecheck",
+    "test": "npm --prefix backend test"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10"
+  }
+}
