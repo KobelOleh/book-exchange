@@ -55,7 +55,18 @@ Pages: `/login`, `/register`, `/` (browse, search, request an exchange),
 
 ## API
 
-`GET /api/health`, `GET|POST /api/tasks`, `GET|PATCH|DELETE /api/tasks/:id`.
+All routes except `/api/health`, `/api/auth/register` and `/api/auth/login` require the auth cookie.
+
+| Route                                                              | What                                                                               |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `POST /api/auth/register`, `/login`, `/logout`, `GET /api/auth/me` | authentication                                                                     |
+| `GET /api/books?search=&mine=true`, `GET /api/books/:id`           | browse and search Books                                                            |
+| `POST /api/books`, `DELETE /api/books/:id`                         | add a Book; remove own Book (Admin: any)                                           |
+| `POST /api/exchange-requests`                                      | `{ requestedBookId, offeredBookIds[] }`; the Owner is notified (logged to console) |
+| `GET /api/exchange-requests/sent`, `/received`                     | the caller's ExchangeRequests                                                      |
+| `/api/users` (Admin only)                                          | list, create, update, delete Users                                                 |
+
+The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `backend/.env`, then run `npx prisma db seed`.
 
 // Відповіді від замовника
 
@@ -64,3 +75,13 @@ Pages: `/login`, `/register`, `/` (browse, search, request an exchange),
 3. Створення адміна як зручно, можна і через seed скрипт
 4. Список книг для обміну означає вибрані відправником книги
 5. Зберігати запити на обмін у БД
+
+## Security notes
+
+- Auth is an HttpOnly, `SameSite=Lax` cookie (`Secure` when `NODE_ENV=production`) holding an HS256 JWT. `JWT_SECRET` must be at least 32 characters. The role is re-read from the database on every request, so role changes and removals apply immediately.
+- Logout clears the cookie but tokens are stateless: a copied token stays valid until `JWT_EXPIRES_IN` passes. Keep that short if it matters.
+- Login is limited per account (`AUTH_RATE_LIMIT` attempts per minute, default 10), not per IP, because the Next proxy does not provide a trustworthy client address. The trade-off: someone can briefly lock a known email out of logging in.
+- Emails are case-insensitive (stored lowercased). Passwords are bcrypt-hashed; the hash never leaves the service.
+- Swagger (`/docs`) is disabled when `NODE_ENV=production`. No CORS is enabled: the browser only talks to the Next origin, which proxies `/api`.
+- `backend/.env` is git-ignored; only `.env.example` files are committed. The Postgres port is bound to `127.0.0.1` for local development only.
+- The seed resets the password of an existing account when it promotes `ADMIN_EMAIL` to Admin.
