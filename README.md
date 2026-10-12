@@ -18,7 +18,7 @@ Node 24, Docker Desktop.
 # 1. database
 docker compose up -d
 
-# 2. backend  (http://localhost:3000, Swagger: /docs)
+# 2. backend  (http://localhost:4000, Swagger: /docs)
 cd backend
 cp .env.example .env
 npm install
@@ -48,6 +48,7 @@ Pages: `/login`, `/register`, `/` (browse, search, request an exchange),
 | Where   | Command                                | What                                               |
 | ------- | -------------------------------------- | -------------------------------------------------- |
 | backend | `npm test`                             | unit tests                                         |
+| backend | `npm run test:e2e`                     | HTTP tests                                         |
 | backend | `npm run lint`                         | oxlint                                             |
 | backend | `npx prisma migrate dev --name <name>` | new migration after editing `prisma/schema.prisma` |
 | backend | `npx prisma studio`                    | DB browser                                         |
