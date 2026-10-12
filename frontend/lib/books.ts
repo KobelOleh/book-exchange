@@ -2,6 +2,7 @@
 
 import {
   keepPreviousData,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -13,8 +14,8 @@ import type { Book, Page } from './types';
 
 /** Books per page in lists; matches the API default. */
 export const BOOKS_PAGE_SIZE = 12;
-/** The most Books the API returns in one page. */
-export const MAX_BOOKS_LIMIT = 100;
+/** Books loaded per scroll step in the Request dialog. */
+export const OFFER_PAGE_SIZE = 20;
 
 /** One page of Books (A→Z), optionally searched or restricted to the caller's own. */
 export function useBooks({
@@ -42,11 +43,17 @@ export function useBooks({
   });
 }
 
-/** As many of the caller's own Books as the API gives in one go, for picking Offered Books. */
+/** The caller's own Books, loaded page by page while scrolling, for picking Offered Books. */
 export function useMyBooksToOffer() {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['books', 'offer'],
-    queryFn: () => api<Page<Book>>(`/books?mine=true&limit=${MAX_BOOKS_LIMIT}`),
+    queryFn: ({ pageParam }) =>
+      api<Page<Book>>(
+        `/books?mine=true&page=${pageParam}&limit=${OFFER_PAGE_SIZE}`,
+      ),
+    initialPageParam: 1,
+    getNextPageParam: ({ page, limit, total }) =>
+      page * limit < total ? page + 1 : undefined,
   });
 }
 

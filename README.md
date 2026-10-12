@@ -99,4 +99,3 @@ The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `ba
 - **Reset link in the URL and the log.** The Password Reset Link stays in browser history, and the console "email" prints the full link; a real mailer must not log it.
 - **External images.** Book covers and avatars are loaded from user-supplied URLs, so those hosts can see the viewer's IP address.
 - **Password guessing on the Profile.** `PATCH /api/auth/me` has no attempt limit on `currentPassword`; guessing needs a valid session first.
-- **Offering more than 100 Books.** The Book list is paged (12 per page), but the Request dialog loads at most 100 of the Requester's own Books in one go (the API maximum) and says so when there are more.

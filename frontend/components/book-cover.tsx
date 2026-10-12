@@ -40,7 +40,7 @@ export function BookCover({
 }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   const frame = cn(
-    'relative block aspect-[2/3] w-full overflow-hidden rounded-sm bg-subtle',
+    'relative block aspect-[2/3] overflow-hidden rounded-sm bg-subtle',
     className,
   );
 

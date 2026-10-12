@@ -32,11 +32,25 @@ export function RequestDialog({
   const [selected, setSelected] = useState<string[]>([]);
 
   const mine = useMyBooksToOffer();
+  const books = mine.data?.pages.flatMap((page) => page.items) ?? [];
+  const loadMore = useRef<HTMLDivElement>(null);
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = mine;
   const toast = useToast();
 
   useEffect(() => {
     dialog.current?.showModal();
   }, []);
+
+  // Load the next page when the end of the list scrolls into view.
+  useEffect(() => {
+    const end = loadMore.current;
+    if (!end || !hasNextPage || isFetchingNextPage) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) void fetchNextPage();
+    });
+    observer.observe(end);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage, books.length]);
 
   const send = useMutation({
     mutationFn: () =>
@@ -80,13 +94,13 @@ export function RequestDialog({
         <DialogBody>
           {mine.isPending && <RowsSkeleton count={3} rowClassName="h-[78px]" />}
           <ErrorAlert error={mine.error} />
-          {mine.data?.items.length === 0 && (
+          {mine.data && books.length === 0 && (
             <p className="text-muted">
               You have no books to offer yet.{' '}
               <Link href="/me/books">Add some first.</Link>
             </p>
           )}
-          {mine.data?.items.map((offered) => (
+          {books.map((offered) => (
             <label
               key={offered.id}
               className="flex cursor-pointer items-center gap-3 rounded-sm border border-line px-3 py-2 focus-within:outline-2 focus-within:outline-offset-1 focus-within:outline-focus hover:bg-subtle has-checked:border-accent has-checked:bg-subtle"
@@ -100,11 +114,10 @@ export function RequestDialog({
               <BookRow book={offered} />
             </label>
           ))}
-          {mine.data && mine.data.total > mine.data.items.length && (
-            <p className="text-muted">
-              Showing your first {mine.data.items.length} of {mine.data.total}{' '}
-              books.
-            </p>
+          {hasNextPage && (
+            <div ref={loadMore} aria-hidden="true">
+              <RowsSkeleton count={1} rowClassName="h-[78px]" />
+            </div>
           )}
           <ErrorAlert error={send.error} />
         </DialogBody>
