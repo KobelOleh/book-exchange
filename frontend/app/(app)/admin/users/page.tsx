@@ -2,19 +2,23 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Button } from '@/components/button';
+import {
+  EmptyState,
+  ErrorAlert,
+  PageHeader,
+  RowsSkeleton,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
 import type { Role, User } from '@/lib/types';
 
+const EMPTY_FORM = { name: '', email: '', password: '', role: 'USER' as Role };
+
 export default function AdminUsersPage() {
   const { data: me } = useMe();
   const queryClient = useQueryClient();
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'USER' as Role,
-  });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const isAdmin = me?.role === 'ADMIN';
   const users = useQuery({
@@ -28,7 +32,7 @@ export default function AdminUsersPage() {
   const create = useMutation({
     mutationFn: () => api<User>('/users', { method: 'POST', body: form }),
     onSuccess: async () => {
-      setForm({ name: '', email: '', password: '', role: 'USER' });
+      setForm(EMPTY_FORM);
       await refresh();
     },
   });
@@ -45,41 +49,53 @@ export default function AdminUsersPage() {
   });
 
   if (me && !isAdmin) {
-    return <p className="error">Only admins can manage users.</p>;
+    return (
+      <p className="alert" role="alert">
+        Only admins can manage users.
+      </p>
+    );
   }
 
   return (
     <>
-      <h1>Users</h1>
+      <PageHeader
+        title="Users"
+        subtitle="Create accounts, change roles and remove users."
+      />
+
       <form
-        className="card stack"
+        className="card form"
         onSubmit={(event) => {
           event.preventDefault();
           create.mutate();
         }}
       >
-        <div className="row">
-          <label>
+        <div className="form-grid">
+          <label className="field">
             Name
             <input
+              className="input"
               type="text"
               required
+              maxLength={100}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
           </label>
-          <label>
+          <label className="field">
             Email
             <input
+              className="input"
               type="email"
               required
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
           </label>
-          <label>
+          <label className="field">
             Password
             <input
+              className="input"
               type="password"
               required
               minLength={8}
@@ -89,9 +105,10 @@ export default function AdminUsersPage() {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </label>
-          <label>
+          <label className="field">
             Role
             <select
+              className="input"
               value={form.role}
               onChange={(e) =>
                 setForm({ ...form, role: e.target.value as Role })
@@ -102,70 +119,91 @@ export default function AdminUsersPage() {
             </select>
           </label>
         </div>
-        {create.error && <p className="error">{create.error.message}</p>}
-        <div>
-          <button type="submit" disabled={create.isPending}>
+        <ErrorAlert error={create.error} />
+        <div className="form__actions">
+          <Button type="submit" loading={create.isPending}>
             Create user
-          </button>
+          </Button>
         </div>
       </form>
 
-      {users.isPending && isAdmin && <p className="muted">Loading…</p>}
-      {users.error && <p className="error">{users.error.message}</p>}
-      {changeRole.error && <p className="error">{changeRole.error.message}</p>}
-      {remove.error && <p className="error">{remove.error.message}</p>}
-      <table style={{ marginTop: 24 }}>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Email</th>
-            <th>Role</th>
-            <th />
-          </tr>
-        </thead>
-        <tbody>
-          {users.data?.map((user) => (
-            <tr key={user.id}>
-              <td>{user.name}</td>
-              <td>{user.email}</td>
-              <td>
-                <select
-                  aria-label={`Role of ${user.name}`}
-                  value={user.role}
-                  disabled={user.id === me?.id}
-                  onChange={(e) =>
-                    changeRole.mutate({
-                      id: user.id,
-                      role: e.target.value as Role,
-                    })
-                  }
-                >
-                  <option value="USER">User</option>
-                  <option value="ADMIN">Admin</option>
-                </select>
-              </td>
-              <td>
-                {user.id !== me?.id && (
-                  <button
-                    className="danger"
-                    onClick={() => {
-                      if (
-                        confirm(
-                          `Remove ${user.name}? Their books and requests are removed too.`,
-                        )
-                      ) {
-                        remove.mutate(user.id);
-                      }
-                    }}
-                  >
-                    Remove
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <section className="section">
+        <div className="section__title">
+          <h2>All users</h2>
+          {users.data && <span className="count">{users.data.length}</span>}
+        </div>
+        <ErrorAlert error={users.error ?? changeRole.error ?? remove.error} />
+        {users.isPending && isAdmin && <RowsSkeleton />}
+        {users.data?.length === 0 && <EmptyState title="No users" />}
+        {users.data && users.data.length > 0 && (
+          <div className="card table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th className="table__actions">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.data.map((user) => {
+                  const isSelf = user.id === me?.id;
+                  return (
+                    <tr key={user.id}>
+                      <td data-label="Name">{user.name}</td>
+                      <td data-label="Email">{user.email}</td>
+                      <td data-label="Role">
+                        <select
+                          className="input input--sm"
+                          aria-label={`Role of ${user.name}`}
+                          value={user.role}
+                          disabled={isSelf || changeRole.isPending}
+                          onChange={(e) =>
+                            changeRole.mutate({
+                              id: user.id,
+                              role: e.target.value as Role,
+                            })
+                          }
+                        >
+                          <option value="USER">User</option>
+                          <option value="ADMIN">Admin</option>
+                        </select>
+                      </td>
+                      <td className="table__actions">
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          disabled={isSelf}
+                          loading={
+                            remove.isPending && remove.variables === user.id
+                          }
+                          title={
+                            isSelf ? 'You cannot remove yourself' : undefined
+                          }
+                          onClick={() => {
+                            if (
+                              confirm(
+                                `Remove ${user.name}? Their books and requests are removed too.`,
+                              )
+                            ) {
+                              remove.mutate(user.id);
+                            }
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </>
   );
 }

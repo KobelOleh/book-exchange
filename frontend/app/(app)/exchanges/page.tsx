@@ -1,15 +1,62 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { BookRow } from '@/components/book-card';
+import {
+  EmptyState,
+  ErrorAlert,
+  PageHeader,
+  RowsSkeleton,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import type { ExchangeRequest } from '@/lib/types';
+
+function RequestCard({
+  request,
+  kind,
+}: {
+  request: ExchangeRequest;
+  kind: 'sent' | 'received';
+}) {
+  return (
+    <article className="card record">
+      <div className="record__head">
+        <p>
+          {kind === 'sent' ? (
+            <>
+              You asked <strong>{request.requestedBook.owner.name}</strong> for
+              “{request.requestedBook.name}”
+            </>
+          ) : (
+            <>
+              <strong>{request.requester.name}</strong> (
+              {request.requester.email}) wants your “
+              {request.requestedBook.name}”
+            </>
+          )}
+        </p>
+        <time className="record__time" dateTime={request.createdAt}>
+          {new Date(request.createdAt).toLocaleString()}
+        </time>
+      </div>
+      <p className="record__label">In return, offered</p>
+      <div className="offer-list">
+        {request.offeredBooks.map((book) => (
+          <BookRow key={book.id} book={book} />
+        ))}
+      </div>
+    </article>
+  );
+}
 
 function RequestList({
   title,
   kind,
+  emptyText,
 }: {
   title: string;
   kind: 'sent' | 'received';
+  emptyText: string;
 }) {
   const requests = useQuery({
     queryKey: ['exchanges', kind],
@@ -17,42 +64,19 @@ function RequestList({
   });
 
   return (
-    <section>
-      <h2>{title}</h2>
-      {requests.isPending && <p className="muted">Loading…</p>}
-      {requests.error && <p className="error">{requests.error.message}</p>}
-      {requests.data?.length === 0 && <p className="muted">Nothing yet.</p>}
-      <div className="stack">
+    <section className="section">
+      <div className="section__title">
+        <h2>{title}</h2>
+        {requests.data && <span className="count">{requests.data.length}</span>}
+      </div>
+      <ErrorAlert error={requests.error} />
+      {requests.isPending && <RowsSkeleton />}
+      {requests.data?.length === 0 && (
+        <EmptyState title="Nothing here yet">{emptyText}</EmptyState>
+      )}
+      <div className="record-list">
         {requests.data?.map((request) => (
-          <article key={request.id} className="card stack">
-            <div>
-              {kind === 'sent' ? (
-                <>
-                  You asked <strong>{request.requestedBook.owner.name}</strong>{' '}
-                  for <strong>“{request.requestedBook.name}”</strong>
-                </>
-              ) : (
-                <>
-                  <strong>{request.requester.name}</strong> (
-                  {request.requester.email}) wants your{' '}
-                  <strong>“{request.requestedBook.name}”</strong>
-                </>
-              )}
-              <div className="muted">
-                {new Date(request.createdAt).toLocaleString()}
-              </div>
-            </div>
-            <div>
-              <span className="muted">In return, offered: </span>
-              <span className="chips" style={{ display: 'inline-flex' }}>
-                {request.offeredBooks.map((book) => (
-                  <span key={book.id} className="chip">
-                    {book.name} — {book.author}
-                  </span>
-                ))}
-              </span>
-            </div>
-          </article>
+          <RequestCard key={request.id} request={request} kind={kind} />
         ))}
       </div>
     </section>
@@ -62,9 +86,20 @@ function RequestList({
 export default function ExchangesPage() {
   return (
     <>
-      <h1>Exchanges</h1>
-      <RequestList title="Received" kind="received" />
-      <RequestList title="Sent" kind="sent" />
+      <PageHeader
+        title="Exchanges"
+        subtitle="Requests people sent you and requests you sent."
+      />
+      <RequestList
+        title="Received"
+        kind="received"
+        emptyText="When someone asks for one of your books, it shows up here."
+      />
+      <RequestList
+        title="Sent"
+        kind="sent"
+        emptyText="Request a book from the Browse page to start an exchange."
+      />
     </>
   );
 }

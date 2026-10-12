@@ -3,6 +3,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { BookCard } from '@/components/book-card';
+import { Button } from '@/components/button';
+import {
+  BookGridSkeleton,
+  EmptyState,
+  ErrorAlert,
+  PageHeader,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import type { Book } from '@/lib/types';
 
@@ -37,74 +44,94 @@ export default function MyBooksPage() {
 
   return (
     <>
-      <h1>My books</h1>
+      <PageHeader
+        title="My books"
+        subtitle="Books you list here can be requested by other readers."
+      />
+
       <form
-        className="card stack"
+        className="card form"
         onSubmit={(event) => {
           event.preventDefault();
           add.mutate();
         }}
       >
-        <label>
-          Name
-          <input
-            type="text"
-            required
-            maxLength={200}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-        <label>
-          Author
-          <input
-            type="text"
-            required
-            maxLength={200}
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-          />
-        </label>
-        <label>
-          Photo URL
-          <input
-            type="url"
-            required
-            placeholder="https://…"
-            value={photoUrl}
-            onChange={(e) => setPhotoUrl(e.target.value)}
-          />
-        </label>
-        {add.error && <p className="error">{add.error.message}</p>}
-        <div>
-          <button type="submit" disabled={add.isPending}>
+        <div className="form-grid">
+          <label className="field">
+            Name
+            <input
+              className="input"
+              type="text"
+              required
+              maxLength={200}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            Author
+            <input
+              className="input"
+              type="text"
+              required
+              maxLength={200}
+              value={author}
+              onChange={(e) => setAuthor(e.target.value)}
+            />
+          </label>
+          <label className="field">
+            Photo URL
+            <input
+              className="input"
+              type="url"
+              required
+              placeholder="https://…"
+              value={photoUrl}
+              onChange={(e) => setPhotoUrl(e.target.value)}
+            />
+          </label>
+        </div>
+        <ErrorAlert error={add.error} />
+        <div className="form__actions">
+          <Button type="submit" loading={add.isPending}>
             Add book
-          </button>
+          </Button>
         </div>
       </form>
 
-      <h2>Your collection</h2>
-      {books.isPending && <p className="muted">Loading…</p>}
-      {books.error && <p className="error">{books.error.message}</p>}
-      {books.data?.length === 0 && (
-        <p className="muted">You have not listed any books yet.</p>
-      )}
-      {remove.error && <p className="error">{remove.error.message}</p>}
-      <div className="grid">
-        {books.data?.map((book) => (
-          <BookCard key={book.id} book={book}>
-            <button
-              className="danger"
-              disabled={remove.isPending}
-              onClick={() => {
-                if (confirm(`Remove “${book.name}”?`)) remove.mutate(book.id);
-              }}
-            >
-              Remove
-            </button>
-          </BookCard>
-        ))}
-      </div>
+      <section className="section">
+        <div className="section__title">
+          <h2>Your collection</h2>
+          {books.data && <span className="count">{books.data.length}</span>}
+        </div>
+        <ErrorAlert error={books.error ?? remove.error} />
+        {books.isPending && <BookGridSkeleton count={4} />}
+        {books.data?.length === 0 && (
+          <EmptyState title="No books yet">
+            Add your first book with the form above.
+          </EmptyState>
+        )}
+        {books.data && books.data.length > 0 && (
+          <div className="book-grid">
+            {books.data.map((book) => (
+              <BookCard key={book.id} book={book}>
+                <Button
+                  variant="danger"
+                  loading={remove.isPending && remove.variables === book.id}
+                  disabled={remove.isPending}
+                  onClick={() => {
+                    if (confirm(`Remove “${book.name}”?`)) {
+                      remove.mutate(book.id);
+                    }
+                  }}
+                >
+                  Remove
+                </Button>
+              </BookCard>
+            ))}
+          </div>
+        )}
+      </section>
     </>
   );
 }

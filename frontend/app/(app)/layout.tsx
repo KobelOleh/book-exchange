@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Button } from '@/components/button';
 import { api, ApiError } from '@/lib/api';
 import { useMe } from '@/lib/auth';
 
@@ -21,8 +22,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!me) {
     return (
-      <main className="container">
-        <p className="muted">{error ? 'Redirecting…' : 'Loading…'}</p>
+      <main className="container page">
+        <p className="muted" role="status">
+          {error ? 'Redirecting…' : 'Loading…'}
+        </p>
       </main>
     );
   }
@@ -34,7 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const links = [
-    { href: '/', label: 'Browse books' },
+    { href: '/', label: 'Browse' },
     { href: '/my-books', label: 'My books' },
     { href: '/exchanges', label: 'Exchanges' },
     ...(me.role === 'ADMIN' ? [{ href: '/admin/users', label: 'Users' }] : []),
@@ -42,28 +45,33 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <nav className="nav">
-        <div className="container">
-          {links.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-current={pathname === href ? 'page' : undefined}
-            >
-              {label}
-            </Link>
-          ))}
-          <span className="spacer" />
-          <span className="who">
-            {me.name}
-            {me.role === 'ADMIN' && ' (admin)'}
-          </span>
-          <button className="secondary" onClick={logout}>
-            Log out
-          </button>
+      <header className="nav">
+        <div className="container nav__inner">
+          <Link href="/" className="nav__brand">
+            Book Exchange
+          </Link>
+          <nav className="nav__links" aria-label="Main">
+            {links.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="nav__link"
+                aria-current={pathname === href ? 'page' : undefined}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+          <div className="nav__user">
+            <span className="nav__who">{me.name}</span>
+            {me.role === 'ADMIN' && <span className="badge">Admin</span>}
+            <Button variant="secondary" size="sm" onClick={logout}>
+              Log out
+            </Button>
+          </div>
         </div>
-      </nav>
-      <main className="container">{children}</main>
+      </header>
+      <main className="container page">{children}</main>
     </>
   );
 }

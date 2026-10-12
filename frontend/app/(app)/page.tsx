@@ -1,23 +1,37 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useState } from 'react';
 import { BookCard } from '@/components/book-card';
+import { Button } from '@/components/button';
 import { RequestDialog } from '@/components/request-dialog';
+import {
+  BookGridSkeleton,
+  EmptyState,
+  ErrorAlert,
+  PageHeader,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
 import type { Book } from '@/lib/types';
+import { useDebounced } from '@/lib/use-debounced';
 
 export default function BrowsePage() {
   const { data: me } = useMe();
   const queryClient = useQueryClient();
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const search = useDebounced(searchInput.trim());
   const [requesting, setRequesting] = useState<Book | null>(null);
 
   const books = useQuery({
     queryKey: ['books', { search }],
-    queryFn: () =>
-      api<Book[]>(`/books?search=${encodeURIComponent(search.trim())}`),
+    queryFn: () => api<Book[]>(`/books?search=${encodeURIComponent(search)}`),
+    placeholderData: keepPreviousData,
   });
 
   const remove = useMutation({
@@ -27,49 +41,76 @@ export default function BrowsePage() {
 
   return (
     <>
-      <h1>Browse books</h1>
-      <div className="row" style={{ marginBottom: 16 }}>
+      <PageHeader
+        title="Browse books"
+        subtitle="Find a book you want and offer some of yours in return."
+      />
+      <div className="toolbar">
+        <label className="sr-only" htmlFor="search">
+          Search books
+        </label>
         <input
+          id="search"
+          className="input"
           type="search"
           placeholder="Search by name or author"
-          aria-label="Search books"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 220 }}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
         />
+        {books.data && (
+          <span className="count" aria-live="polite">
+            {books.data.length} {books.data.length === 1 ? 'book' : 'books'}
+          </span>
+        )}
       </div>
-      {books.isPending && <p className="muted">Loading…</p>}
-      {books.error && <p className="error">{books.error.message}</p>}
-      {books.data?.length === 0 && <p className="muted">No books found.</p>}
-      {remove.error && <p className="error">{remove.error.message}</p>}
-      <div className="grid">
-        {books.data?.map((book) => {
-          const isOwn = book.ownerId === me?.id;
-          return (
-            <BookCard
-              key={book.id}
-              book={book}
-              subtitle={isOwn ? 'Yours' : `Owner: ${book.owner.name}`}
-            >
-              {!isOwn && (
-                <button onClick={() => setRequesting(book)}>Request</button>
-              )}
-              {me?.role === 'ADMIN' && !isOwn && (
-                <button
-                  className="danger"
-                  disabled={remove.isPending}
-                  onClick={() => {
-                    if (confirm(`Remove “${book.name}”?`))
-                      remove.mutate(book.id);
-                  }}
-                >
-                  Remove
-                </button>
-              )}
-            </BookCard>
-          );
-        })}
-      </div>
+
+      <ErrorAlert error={books.error ?? remove.error} />
+      {books.isPending && <BookGridSkeleton />}
+      {books.data?.length === 0 && (
+        <EmptyState
+          title={search ? `No books match “${search}”` : 'No books yet'}
+        >
+          {search
+            ? 'Try a different name or author.'
+            : 'Books listed by readers will show up here.'}
+        </EmptyState>
+      )}
+      {books.data && books.data.length > 0 && (
+        <div className="book-grid">
+          {books.data.map((book) => {
+            const isOwn = book.ownerId === me?.id;
+            return (
+              <BookCard
+                key={book.id}
+                book={book}
+                owner={isOwn ? 'You' : book.owner.name}
+              >
+                {isOwn ? (
+                  <Button variant="secondary" disabled>
+                    Your book
+                  </Button>
+                ) : (
+                  <Button onClick={() => setRequesting(book)}>Request</Button>
+                )}
+                {me?.role === 'ADMIN' && !isOwn && (
+                  <Button
+                    variant="danger"
+                    loading={remove.isPending && remove.variables === book.id}
+                    disabled={remove.isPending}
+                    onClick={() => {
+                      if (confirm(`Remove “${book.name}”?`)) {
+                        remove.mutate(book.id);
+                      }
+                    }}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </BookCard>
+            );
+          })}
+        </div>
+      )}
       {requesting && (
         <RequestDialog book={requesting} onClose={() => setRequesting(null)} />
       )}

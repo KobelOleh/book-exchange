@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import type { Book } from '@/lib/types';
+import { BookRow } from './book-card';
+import { Button } from './button';
+import { ErrorAlert, RowsSkeleton } from './ui';
 
 /** Lets the Requester pick which of their own Books to offer for a Book. */
 export function RequestDialog({
@@ -35,7 +38,7 @@ export function RequestDialog({
       }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['exchanges'] });
-      onClose();
+      dialog.current?.close();
     },
   });
 
@@ -46,40 +49,57 @@ export function RequestDialog({
   }
 
   return (
-    <dialog ref={dialog} onClose={onClose}>
-      <div className="stack">
-        <h1>Request “{book.name}”</h1>
-        <p className="muted">
-          Choose the books you offer to {book.owner.name} in return.
-        </p>
-        {mine.isPending && <p className="muted">Loading your books…</p>}
-        {mine.data?.length === 0 && (
-          <p>
-            You have no books to offer yet.{' '}
-            <Link href="/my-books">Add some first.</Link>
+    <dialog
+      ref={dialog}
+      className="dialog"
+      aria-labelledby="request-title"
+      onClose={onClose}
+      onClick={(event) => {
+        // A click on the backdrop lands on the dialog element itself.
+        if (event.target === dialog.current) dialog.current?.close();
+      }}
+    >
+      <div className="dialog__inner">
+        <div className="dialog__head">
+          <h2 id="request-title">Request “{book.name}”</h2>
+          <p className="muted">
+            Choose the books you offer to {book.owner.name} in return.
           </p>
-        )}
-        {mine.data?.map((offered) => (
-          <label key={offered.id} className="pick">
-            <input
-              type="checkbox"
-              checked={selected.includes(offered.id)}
-              onChange={() => toggle(offered.id)}
-            />
-            {offered.name} — {offered.author}
-          </label>
-        ))}
-        {send.error && <p className="error">{send.error.message}</p>}
-        <div className="row">
-          <button
-            disabled={selected.length === 0 || send.isPending}
+        </div>
+
+        <div className="dialog__body">
+          {mine.isPending && <RowsSkeleton count={3} />}
+          <ErrorAlert error={mine.error} />
+          {mine.data?.length === 0 && (
+            <p className="muted">
+              You have no books to offer yet.{' '}
+              <Link href="/my-books">Add some first.</Link>
+            </p>
+          )}
+          {mine.data?.map((offered) => (
+            <label key={offered.id} className="pick">
+              <input
+                type="checkbox"
+                checked={selected.includes(offered.id)}
+                onChange={() => toggle(offered.id)}
+              />
+              <BookRow book={offered} />
+            </label>
+          ))}
+          <ErrorAlert error={send.error} />
+        </div>
+
+        <div className="dialog__foot">
+          <Button variant="secondary" onClick={() => dialog.current?.close()}>
+            Cancel
+          </Button>
+          <Button
+            disabled={selected.length === 0}
+            loading={send.isPending}
             onClick={() => send.mutate()}
           >
             Send request
-          </button>
-          <button className="secondary" onClick={() => dialog.current?.close()}>
-            Cancel
-          </button>
+          </Button>
         </div>
       </div>
     </dialog>
