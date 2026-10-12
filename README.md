@@ -41,7 +41,7 @@ backend still verifies the token on every call. Port 3100 is used because
 Windows can reserve 3000 (check `netsh int ipv4 show excludedportrange protocol=tcp`).
 
 Pages: `/login`, `/register`, `/` (browse, search, request an exchange),
-`/my-books`, `/exchanges`, `/profile` (edit name, email and avatar URL; see your Book count and received requests), `/forgot-password` and `/reset-password` (Password Reset Link), `/admin/users` (Admin only).
+`/my-books`, `/books/:id` (Book details and Request), `/exchanges`, `/profile` (edit name, email and avatar URL; see your Book count and received requests), `/forgot-password` and `/reset-password` (Password Reset Link), `/admin/users` (Admin only).
 
 ## Useful commands
 
@@ -99,3 +99,4 @@ The first Admin comes from the seed: set `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `ba
 - **Reset link in the URL and the log.** The Password Reset Link stays in browser history, and the console "email" prints the full link; a real mailer must not log it.
 - **External images.** Book covers and avatars are loaded from user-supplied URLs, so those hosts can see the viewer's IP address.
 - **Password guessing on the Profile.** `PATCH /api/auth/me` has no attempt limit on `currentPassword`; guessing needs a valid session first.
+- **Offering more than 100 Books.** The Book list is paged (12 per page), but the Request dialog loads at most 100 of the Requester's own Books in one go (the API maximum) and says so when there are more.

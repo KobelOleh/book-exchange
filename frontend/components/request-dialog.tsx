@@ -4,10 +4,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
-import { useMyBooks } from '@/lib/books';
+import { useMyBooksToOffer } from '@/lib/books';
 import type { Book } from '@/lib/types';
 import { BookRow } from './book-card';
 import { Button } from './button';
+import { useToast } from './toast';
 import { ErrorAlert, RowsSkeleton } from './ui';
 
 /** Lets the Requester pick which of their own Books to offer for a Book. */
@@ -22,7 +23,8 @@ export function RequestDialog({
   const queryClient = useQueryClient();
   const [selected, setSelected] = useState<string[]>([]);
 
-  const mine = useMyBooks();
+  const mine = useMyBooksToOffer();
+  const toast = useToast();
 
   useEffect(() => {
     dialog.current?.showModal();
@@ -34,7 +36,11 @@ export function RequestDialog({
         method: 'POST',
         body: { requestedBookId: book.id, offeredBookIds: selected },
       }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exchanges'] }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['exchanges'] });
+      toast.success(`Request sent to ${book.owner.name}`);
+      dialog.current?.close();
+    },
   });
 
   function toggle(id: string) {
@@ -62,59 +68,46 @@ export function RequestDialog({
           </p>
         </div>
 
-        {send.isSuccess ? (
-          <>
-            <div className="dialog__body">
-              <p role="status">
-                Request sent. {book.owner.name} has been notified and will see
-                the books you offered.
-              </p>
-            </div>
-            <div className="dialog__foot">
-              <Button onClick={() => dialog.current?.close()}>Done</Button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="dialog__body">
-              {mine.isPending && <RowsSkeleton count={3} />}
-              <ErrorAlert error={mine.error} />
-              {mine.data?.length === 0 && (
-                <p className="muted">
-                  You have no books to offer yet.{' '}
-                  <Link href="/my-books">Add some first.</Link>
-                </p>
-              )}
-              {mine.data?.map((offered) => (
-                <label key={offered.id} className="pick">
-                  <input
-                    type="checkbox"
-                    checked={selected.includes(offered.id)}
-                    onChange={() => toggle(offered.id)}
-                  />
-                  <BookRow book={offered} />
-                </label>
-              ))}
-              <ErrorAlert error={send.error} />
-            </div>
+        <div className="dialog__body">
+          {mine.isPending && <RowsSkeleton count={3} />}
+          <ErrorAlert error={mine.error} />
+          {mine.data?.items.length === 0 && (
+            <p className="muted">
+              You have no books to offer yet.{' '}
+              <Link href="/my-books">Add some first.</Link>
+            </p>
+          )}
+          {mine.data?.items.map((offered) => (
+            <label key={offered.id} className="pick">
+              <input
+                type="checkbox"
+                checked={selected.includes(offered.id)}
+                onChange={() => toggle(offered.id)}
+              />
+              <BookRow book={offered} />
+            </label>
+          ))}
+          {mine.data && mine.data.total > mine.data.items.length && (
+            <p className="muted">
+              Showing your first {mine.data.items.length} of {mine.data.total}{' '}
+              books.
+            </p>
+          )}
+          <ErrorAlert error={send.error} />
+        </div>
 
-            <div className="dialog__foot">
-              <Button
-                variant="secondary"
-                onClick={() => dialog.current?.close()}
-              >
-                Cancel
-              </Button>
-              <Button
-                disabled={selected.length === 0}
-                loading={send.isPending}
-                onClick={() => send.mutate()}
-              >
-                Send request
-              </Button>
-            </div>
-          </>
-        )}
+        <div className="dialog__foot">
+          <Button variant="secondary" onClick={() => dialog.current?.close()}>
+            Cancel
+          </Button>
+          <Button
+            disabled={selected.length === 0}
+            loading={send.isPending}
+            onClick={() => send.mutate()}
+          >
+            Send request
+          </Button>
+        </div>
       </div>
     </dialog>
   );

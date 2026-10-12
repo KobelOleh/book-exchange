@@ -1,35 +1,32 @@
 'use client';
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { BookCard } from '@/components/book-card';
+import { BookList } from '@/components/book-list';
 import { Button } from '@/components/button';
 import { RequestDialog } from '@/components/request-dialog';
-import {
-  BookGridSkeleton,
-  EmptyState,
-  ErrorAlert,
-  PageHeader,
-} from '@/components/ui';
-import { api } from '@/lib/api';
+import { EmptyState, PageHeader } from '@/components/ui';
 import { useMe } from '@/lib/auth';
-import { useRemoveBook } from '@/lib/books';
+import { useBooks, useRemoveBook } from '@/lib/books';
 import type { Book } from '@/lib/types';
+import { useListParams } from '@/lib/use-list-params';
 import { useDebounced } from '@/lib/use-debounced';
 
-export default function BrowsePage() {
+function BrowseBooks() {
   const { data: me } = useMe();
-  const [searchInput, setSearchInput] = useState('');
-  const search = useDebounced(searchInput.trim());
+  const { page, search, setPage, setSearch } = useListParams();
+  const [searchInput, setSearchInput] = useState(search);
+  const debouncedSearch = useDebounced(searchInput.trim());
   const [requesting, setRequesting] = useState<Book | null>(null);
 
-  const books = useQuery({
-    queryKey: ['books', { search }],
-    queryFn: () => api<Book[]>(`/books?search=${encodeURIComponent(search)}`),
-    placeholderData: keepPreviousData,
-  });
+  // Typing updates the URL after a short pause; the URL is the source of truth for the query.
+  useEffect(() => {
+    if (debouncedSearch !== search) setSearch(debouncedSearch);
+  }, [debouncedSearch, search, setSearch]);
 
+  const books = useBooks({ page, search });
   const remove = useRemoveBook();
+  const total = books.data?.total;
 
   return (
     <>
@@ -49,59 +46,66 @@ export default function BrowsePage() {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
-        {books.data && (
+        {total !== undefined && (
           <span className="count" aria-live="polite">
-            {books.data.length} {books.data.length === 1 ? 'book' : 'books'}
+            {total} {total === 1 ? 'book' : 'books'}
           </span>
         )}
       </div>
 
-      <ErrorAlert error={books.error ?? remove.error} />
-      {books.isPending && <BookGridSkeleton />}
-      {books.data?.length === 0 && (
-        <EmptyState
-          title={search ? `No books match “${search}”` : 'No books yet'}
-        >
-          {search
-            ? 'Try a different name or author.'
-            : 'Books listed by readers will show up here.'}
-        </EmptyState>
-      )}
-      {books.data && books.data.length > 0 && (
-        <div className="book-grid">
-          {books.data.map((book) => {
-            const isOwn = book.ownerId === me?.id;
-            return (
-              <BookCard
-                key={book.id}
-                book={book}
-                owner={isOwn ? 'You' : book.owner.name}
-              >
-                {isOwn ? (
-                  <Button variant="secondary" disabled>
-                    Your book
-                  </Button>
-                ) : (
-                  <Button onClick={() => setRequesting(book)}>Request</Button>
-                )}
-                {me?.role === 'ADMIN' && !isOwn && (
-                  <Button
-                    variant="danger"
-                    loading={remove.isRemoving(book.id)}
-                    disabled={remove.isBusy}
-                    onClick={() => remove.confirmAndRemove(book)}
-                  >
-                    Remove
-                  </Button>
-                )}
-              </BookCard>
-            );
-          })}
-        </div>
-      )}
+      <BookList
+        query={books}
+        page={page}
+        onPageChange={setPage}
+        empty={
+          <EmptyState
+            title={search ? `No books match “${search}”` : 'No books yet'}
+          >
+            {search
+              ? 'Try a different name or author.'
+              : 'Books listed by readers will show up here.'}
+          </EmptyState>
+        }
+        renderBook={(book) => {
+          const isOwn = book.ownerId === me?.id;
+          return (
+            <BookCard
+              book={book}
+              href={`/books/${book.id}`}
+              owner={isOwn ? 'You' : book.owner.name}
+            >
+              {isOwn ? (
+                <Button variant="secondary" disabled>
+                  Your book
+                </Button>
+              ) : (
+                <Button onClick={() => setRequesting(book)}>Request</Button>
+              )}
+              {me?.role === 'ADMIN' && !isOwn && (
+                <Button
+                  variant="danger"
+                  loading={remove.isRemoving(book.id)}
+                  disabled={remove.isBusy}
+                  onClick={() => remove.confirmAndRemove(book)}
+                >
+                  Remove
+                </Button>
+              )}
+            </BookCard>
+          );
+        }}
+      />
       {requesting && (
         <RequestDialog book={requesting} onClose={() => setRequesting(null)} />
       )}
     </>
+  );
+}
+
+export default function BrowsePage() {
+  return (
+    <Suspense>
+      <BrowseBooks />
+    </Suspense>
   );
 }

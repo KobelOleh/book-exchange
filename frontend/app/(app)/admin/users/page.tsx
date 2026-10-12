@@ -3,6 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button } from '@/components/button';
+import { useConfirm } from '@/components/confirm';
+import { Select } from '@/components/select';
+import { useToast } from '@/components/toast';
 import {
   EmptyState,
   ErrorAlert,
@@ -18,6 +21,8 @@ const EMPTY_FORM = { name: '', email: '', password: '', role: 'USER' as Role };
 export default function AdminUsersPage() {
   const { data: me } = useMe();
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
+  const toast = useToast();
   const [form, setForm] = useState(EMPTY_FORM);
 
   const isAdmin = me?.role === 'ADMIN';
@@ -34,18 +39,27 @@ export default function AdminUsersPage() {
     onSuccess: async () => {
       setForm(EMPTY_FORM);
       await refresh();
+      toast.success('User created');
     },
   });
 
   const changeRole = useMutation({
     mutationFn: ({ id, role }: { id: string; role: Role }) =>
       api(`/users/${id}`, { method: 'PATCH', body: { role } }),
-    onSuccess: refresh,
+    onSuccess: async (_, { role }) => {
+      await refresh();
+      toast.success(`Role changed to ${role === 'ADMIN' ? 'Admin' : 'User'}`);
+    },
+    onError: (error) => toast.error(error.message),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => api(`/users/${id}`, { method: 'DELETE' }),
-    onSuccess: refresh,
+    onSuccess: async () => {
+      await refresh();
+      toast.success('User removed');
+    },
+    onError: (error) => toast.error(error.message),
   });
 
   if (me && !isAdmin) {
@@ -107,8 +121,7 @@ export default function AdminUsersPage() {
           </label>
           <label className="field">
             Role
-            <select
-              className="input"
+            <Select
               value={form.role}
               onChange={(e) =>
                 setForm({ ...form, role: e.target.value as Role })
@@ -116,7 +129,7 @@ export default function AdminUsersPage() {
             >
               <option value="USER">User</option>
               <option value="ADMIN">Admin</option>
-            </select>
+            </Select>
           </label>
         </div>
         <ErrorAlert error={create.error} />
@@ -132,7 +145,7 @@ export default function AdminUsersPage() {
           <h2>All users</h2>
           {users.data && <span className="count">{users.data.length}</span>}
         </div>
-        <ErrorAlert error={users.error ?? changeRole.error ?? remove.error} />
+        <ErrorAlert error={users.error} />
         {users.isPending && isAdmin && <RowsSkeleton />}
         {users.data?.length === 0 && <EmptyState title="No users" />}
         {users.data && users.data.length > 0 && (
@@ -156,8 +169,8 @@ export default function AdminUsersPage() {
                       <td data-label="Name">{user.name}</td>
                       <td data-label="Email">{user.email}</td>
                       <td data-label="Role">
-                        <select
-                          className="input input--sm"
+                        <Select
+                          compact
                           aria-label={`Role of ${user.name}`}
                           value={user.role}
                           disabled={isSelf || changeRole.isPending}
@@ -170,7 +183,7 @@ export default function AdminUsersPage() {
                         >
                           <option value="USER">User</option>
                           <option value="ADMIN">Admin</option>
-                        </select>
+                        </Select>
                       </td>
                       <td className="table__actions">
                         <Button
@@ -183,14 +196,14 @@ export default function AdminUsersPage() {
                           title={
                             isSelf ? 'You cannot remove yourself' : undefined
                           }
-                          onClick={() => {
-                            if (
-                              confirm(
-                                `Remove ${user.name}? Their books and requests are removed too.`,
-                              )
-                            ) {
-                              remove.mutate(user.id);
-                            }
+                          onClick={async () => {
+                            const confirmed = await confirm({
+                              title: `Remove ${user.name}?`,
+                              message:
+                                'Their books and requests are removed too.',
+                              confirmLabel: 'Remove',
+                            });
+                            if (confirmed) remove.mutate(user.id);
                           }}
                         >
                           Remove

@@ -1,22 +1,19 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
-import { RequestCard } from '@/components/request-card';
-import {
-  EmptyState,
-  ErrorAlert,
-  PageHeader,
-  RowsSkeleton,
-} from '@/components/ui';
+import { RequestList } from '@/components/request-list';
+import { useToast } from '@/components/toast';
+import { ErrorAlert, PageHeader, RowsSkeleton } from '@/components/ui';
 import { api } from '@/lib/api';
 import { ME_KEY, PROFILE_KEY, useProfile } from '@/lib/auth';
-import type { ExchangeRequest, Profile } from '@/lib/types';
+import type { Profile } from '@/lib/types';
 
 function ProfileForm({ profile }: { profile: Profile }) {
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [name, setName] = useState(profile.name);
   const [email, setEmail] = useState(profile.email);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? '');
@@ -36,6 +33,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
       }),
     onSuccess: (updated) => {
       setCurrentPassword('');
+      toast.success('Profile saved');
       queryClient.setQueryData(PROFILE_KEY, updated);
       queryClient.setQueryData(ME_KEY, updated);
     },
@@ -104,45 +102,12 @@ function ProfileForm({ profile }: { profile: Profile }) {
         </label>
       </div>
       <ErrorAlert error={save.error} />
-      {save.isSuccess && (
-        <p className="muted" role="status">
-          Profile saved.
-        </p>
-      )}
       <div className="form__actions">
         <Button type="submit" loading={save.isPending}>
           Save changes
         </Button>
       </div>
     </form>
-  );
-}
-
-function ReceivedRequests() {
-  const requests = useQuery({
-    queryKey: ['exchanges', 'received'],
-    queryFn: () => api<ExchangeRequest[]>('/exchange-requests/received'),
-  });
-
-  return (
-    <section className="section">
-      <div className="section__title">
-        <h2>Exchange requests for you</h2>
-        {requests.data && <span className="count">{requests.data.length}</span>}
-      </div>
-      <ErrorAlert error={requests.error} />
-      {requests.isPending && <RowsSkeleton />}
-      {requests.data?.length === 0 && (
-        <EmptyState title="Nothing here yet">
-          When someone asks for one of your books, it shows up here.
-        </EmptyState>
-      )}
-      <div className="record-list">
-        {requests.data?.map((request) => (
-          <RequestCard key={request.id} request={request} kind="received" />
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -165,7 +130,11 @@ export default function ProfilePage() {
       <ErrorAlert error={profile.error} />
       {profile.isPending && <RowsSkeleton count={1} />}
       {profile.data && <ProfileForm profile={profile.data} />}
-      <ReceivedRequests />
+      <RequestList
+        title="Exchange requests for you"
+        kind="received"
+        emptyText="When someone asks for one of your books, it shows up here."
+      />
     </>
   );
 }

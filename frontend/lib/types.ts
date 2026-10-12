@@ -43,3 +43,11 @@ export interface ExchangeRequest {
   requestedBook: ExchangeBook & { owner: Omit<Person, 'email'> };
   offeredBooks: ExchangeBook[];
 }
+
+/** One page of a larger list, as returned by the Book list. */
+export interface Page<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+}

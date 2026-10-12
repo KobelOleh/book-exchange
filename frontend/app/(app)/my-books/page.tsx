@@ -1,26 +1,26 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { BookCard } from '@/components/book-card';
 import { Button } from '@/components/button';
-import {
-  BookGridSkeleton,
-  EmptyState,
-  ErrorAlert,
-  PageHeader,
-} from '@/components/ui';
+import { BookList } from '@/components/book-list';
+import { useToast } from '@/components/toast';
+import { EmptyState, ErrorAlert, PageHeader } from '@/components/ui';
 import { api } from '@/lib/api';
-import { useMyBooks, useRemoveBook } from '@/lib/books';
+import { useBooks, useRemoveBook } from '@/lib/books';
+import { useListParams } from '@/lib/use-list-params';
 import type { Book } from '@/lib/types';
 
-export default function MyBooksPage() {
+function MyBooks() {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [author, setAuthor] = useState('');
   const [photoUrl, setPhotoUrl] = useState('');
 
-  const books = useMyBooks();
+  const toast = useToast();
+  const { page, setPage } = useListParams();
+  const books = useBooks({ page, mine: true });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['books'] });
 
@@ -32,6 +32,7 @@ export default function MyBooksPage() {
       setAuthor('');
       setPhotoUrl('');
       await refresh();
+      toast.success('Book added');
     },
   });
 
@@ -97,32 +98,39 @@ export default function MyBooksPage() {
       <section className="section">
         <div className="section__title">
           <h2>Your collection</h2>
-          {books.data && <span className="count">{books.data.length}</span>}
+          {books.data && <span className="count">{books.data.total}</span>}
         </div>
-        <ErrorAlert error={books.error ?? remove.error} />
-        {books.isPending && <BookGridSkeleton count={4} />}
-        {books.data?.length === 0 && (
-          <EmptyState title="No books yet">
-            Add your first book with the form above.
-          </EmptyState>
-        )}
-        {books.data && books.data.length > 0 && (
-          <div className="book-grid">
-            {books.data.map((book) => (
-              <BookCard key={book.id} book={book}>
-                <Button
-                  variant="danger"
-                  loading={remove.isRemoving(book.id)}
-                  disabled={remove.isBusy}
-                  onClick={() => remove.confirmAndRemove(book)}
-                >
-                  Remove
-                </Button>
-              </BookCard>
-            ))}
-          </div>
-        )}
+        <BookList
+          query={books}
+          page={page}
+          onPageChange={setPage}
+          empty={
+            <EmptyState title="No books yet">
+              Add your first book with the form above.
+            </EmptyState>
+          }
+          renderBook={(book) => (
+            <BookCard book={book} href={`/books/${book.id}`}>
+              <Button
+                variant="danger"
+                loading={remove.isRemoving(book.id)}
+                disabled={remove.isBusy}
+                onClick={() => remove.confirmAndRemove(book)}
+              >
+                Remove
+              </Button>
+            </BookCard>
+          )}
+        />
       </section>
     </>
+  );
+}
+
+export default function MyBooksPage() {
+  return (
+    <Suspense>
+      <MyBooks />
+    </Suspense>
   );
 }

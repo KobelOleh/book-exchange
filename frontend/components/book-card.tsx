@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ExchangeBook } from '@/lib/types';
 import { BookCover } from './book-cover';
 
@@ -5,18 +6,39 @@ import { BookCover } from './book-cover';
 export function BookCard({
   book,
   owner,
+  href,
   children,
 }: {
   book: ExchangeBook;
   owner?: string;
+  /** Where the cover and title lead, when the card is a link to the Book's page. */
+  href?: string;
   children?: React.ReactNode;
 }) {
+  const cover = <BookCover url={book.photoUrl} title={book.name} />;
   return (
     <article className="card book-card">
-      <BookCover url={book.photoUrl} title={book.name} />
+      {href ? (
+        <Link
+          href={href}
+          className="book-card__cover"
+          tabIndex={-1}
+          aria-hidden="true"
+        >
+          {cover}
+        </Link>
+      ) : (
+        cover
+      )}
       <div className="book-card__body">
         <h3 className="book-card__title" title={book.name}>
-          {book.name}
+          {href ? (
+            <Link href={href} className="book-card__link">
+              {book.name}
+            </Link>
+          ) : (
+            book.name
+          )}
         </h3>
         <p className="book-card__meta" title={book.author}>
           {book.author}
