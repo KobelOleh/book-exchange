@@ -54,7 +54,7 @@ const demoUsers = [
 ];
 
 async function seedAdmin() {
-  const email = requireEnv('ADMIN_EMAIL');
+  const email = requireEnv('ADMIN_EMAIL').trim().toLowerCase();
   const passwordHash = await bcrypt.hash(
     requireEnv('ADMIN_PASSWORD'),
     PASSWORD_HASH_ROUNDS,
@@ -62,7 +62,9 @@ async function seedAdmin() {
 
   await prisma.user.upsert({
     where: { email },
-    update: { role: Role.ADMIN },
+    // An account that already uses this email (e.g. self-registered before the
+    // seed ran) must not become Admin while keeping its own password.
+    update: { role: Role.ADMIN, passwordHash },
     create: { email, name: 'Admin', passwordHash, role: Role.ADMIN },
   });
 }

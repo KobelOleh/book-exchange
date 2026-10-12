@@ -27,9 +27,28 @@ const exchangeRequestInclude = {
   offeredBooks: { select: bookSelect },
 } satisfies Prisma.ExchangeRequestInclude;
 
-export type ExchangeRequestDetails = Prisma.ExchangeRequestGetPayload<{
+type StoredExchangeRequest = Prisma.ExchangeRequestGetPayload<{
   include: typeof exchangeRequestInclude;
 }>;
+
+/**
+ * What the API returns. The Requester sees who owns the Requested Book but not
+ * their email; only the Owner (via the notification and the received list)
+ * learns the Requester's email.
+ */
+export type ExchangeRequestDetails = Omit<
+  StoredExchangeRequest,
+  'requestedBook'
+> & {
+  requestedBook: Omit<StoredExchangeRequest['requestedBook'], 'owner'> & {
+    owner: { id: string; name: string };
+  };
+};
+
+function toDetails(request: StoredExchangeRequest): ExchangeRequestDetails {
+  const { email: _ownerEmail, ...owner } = request.requestedBook.owner;
+  return { ...request, requestedBook: { ...request.requestedBook, owner } };
+}
 
 export interface CreateExchangeRequestInput {
   requestedBookId: string;
@@ -87,24 +106,30 @@ export class ExchangesService {
       offeredBooks: request.offeredBooks,
     });
 
-    return request;
+    return toDetails(request);
   }
 
   /** ExchangeRequests the caller has sent. */
-  listSent(requester: AuthenticatedUser): Promise<ExchangeRequestDetails[]> {
-    return this.prisma.exchangeRequest.findMany({
+  async listSent(
+    requester: AuthenticatedUser,
+  ): Promise<ExchangeRequestDetails[]> {
+    const requests = await this.prisma.exchangeRequest.findMany({
       where: { requesterId: requester.id },
       orderBy: { createdAt: 'desc' },
       include: exchangeRequestInclude,
     });
+    return requests.map(toDetails);
   }
 
   /** ExchangeRequests addressed to the caller as Owner of the Requested Book. */
-  listReceived(owner: AuthenticatedUser): Promise<ExchangeRequestDetails[]> {
-    return this.prisma.exchangeRequest.findMany({
+  async listReceived(
+    owner: AuthenticatedUser,
+  ): Promise<ExchangeRequestDetails[]> {
+    const requests = await this.prisma.exchangeRequest.findMany({
       where: { requestedBook: { ownerId: owner.id } },
       orderBy: { createdAt: 'desc' },
       include: exchangeRequestInclude,
     });
+    return requests.map(toDetails);
   }
 }

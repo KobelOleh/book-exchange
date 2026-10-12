@@ -42,6 +42,7 @@ export class UsersService {
       return await this.prisma.user.create({
         data: {
           ...data,
+          email: normalizeEmail(data.email),
           passwordHash: await hashPassword(password),
         },
         select: publicUserSelect,
@@ -59,14 +60,24 @@ export class UsersService {
   }
 
   async update(
+    actor: AuthenticatedUser,
     id: string,
     { password, ...data }: UpdateUserInput,
   ): Promise<PublicUser> {
+    if (
+      actor.id === id &&
+      data.role !== undefined &&
+      data.role !== actor.role
+    ) {
+      throw new ForbiddenException('You cannot change your own role');
+    }
+
     try {
       return await this.prisma.user.update({
         where: { id },
         data: {
           ...data,
+          ...(data.email && { email: normalizeEmail(data.email) }),
           ...(password && { passwordHash: await hashPassword(password) }),
         },
         select: publicUserSelect,
@@ -104,11 +115,17 @@ export class UsersService {
     password: string,
   ): Promise<PublicUser | null> {
     const found = await this.prisma.user.findUnique({
-      where: { email },
+      where: { email: normalizeEmail(email) },
       select: { ...publicUserSelect, passwordHash: true },
     });
 
-    if (!found || !(await bcrypt.compare(password, found.passwordHash))) {
+    // Always run a bcrypt comparison so an unknown email costs as much time as
+    // a wrong password and cannot be told apart by response time.
+    const matches = await bcrypt.compare(
+      password,
+      found?.passwordHash ?? (await getDummyPasswordHash()),
+    );
+    if (!found || !matches) {
       return null;
     }
 
@@ -119,6 +136,18 @@ export class UsersService {
 
 function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, PASSWORD_HASH_ROUNDS);
+}
+
+let dummyPasswordHash: Promise<string> | undefined;
+
+function getDummyPasswordHash(): Promise<string> {
+  dummyPasswordHash ??= hashPassword('dummy-password-for-timing');
+  return dummyPasswordHash;
+}
+
+/** Emails are case-insensitive for people, so store and look them up lowercased. */
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';

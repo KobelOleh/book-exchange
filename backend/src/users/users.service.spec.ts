@@ -8,6 +8,7 @@ import {
   createTestModule,
   resetDatabase,
 } from '../../test/support/test-module.js';
+import { AuthenticatedUser } from '../common/authenticated-user.js';
 import { Role } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UsersModule } from './users.module.js';
@@ -16,6 +17,10 @@ import { UsersService } from './users.service.js';
 describe('UsersService', () => {
   let moduleRef: TestingModule;
   let users: UsersService;
+  const actor: AuthenticatedUser = {
+    id: '11111111-1111-4111-8111-111111111111',
+    role: Role.ADMIN,
+  };
 
   beforeAll(async () => {
     moduleRef = await createTestModule([UsersModule]);
@@ -118,7 +123,7 @@ describe('UsersService', () => {
       password: 'correct-horse',
     });
 
-    const updated = await users.update(created.id, {
+    const updated = await users.update(actor, created.id, {
       name: 'Olena K.',
       role: Role.ADMIN,
     });
@@ -133,7 +138,7 @@ describe('UsersService', () => {
       password: 'correct-horse',
     });
 
-    await users.update(created.id, { password: 'battery-staple' });
+    await users.update(actor, created.id, { password: 'battery-staple' });
 
     expect(
       await users.verifyCredentials('olena@example.com', 'battery-staple'),
@@ -156,14 +161,52 @@ describe('UsersService', () => {
     });
 
     await expect(
-      users.update(olena.id, { email: 'andrii@example.com' }),
+      users.update(actor, olena.id, { email: 'andrii@example.com' }),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
   it('reports updating a missing User as not found', async () => {
     await expect(
-      users.update('00000000-0000-0000-0000-000000000000', { name: 'Ghost' }),
+      users.update(actor, '00000000-0000-0000-0000-000000000000', {
+        name: 'Ghost',
+      }),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('stores emails lowercased and logs in regardless of case', async () => {
+    const created = await users.create({
+      email: ' Olena@Example.COM ',
+      name: 'Olena',
+      password: 'correct-horse',
+    });
+
+    expect(created.email).toBe('olena@example.com');
+    expect(
+      await users.verifyCredentials('OLENA@example.com', 'correct-horse'),
+    ).toEqual(created);
+    await expect(
+      users.create({
+        email: 'olena@example.com',
+        name: 'Other',
+        password: 'correct-horse',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('forbids an Admin from changing their own role', async () => {
+    const admin = await users.create({
+      email: 'admin@example.com',
+      name: 'Admin',
+      password: 'admin-pass-123',
+      role: Role.ADMIN,
+    });
+
+    await expect(
+      users.update({ id: admin.id, role: Role.ADMIN }, admin.id, {
+        role: Role.USER,
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect((await users.findById(admin.id)).role).toBe(Role.ADMIN);
   });
 
   it('lets an Admin remove another User', async () => {

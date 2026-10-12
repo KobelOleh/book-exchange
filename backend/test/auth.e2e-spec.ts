@@ -64,6 +64,30 @@ describe('Authentication and roles (HTTP)', () => {
     await request(app.getHttpServer()).get('/api/auth/me').expect(401);
   });
 
+  it('rejects a password longer than bcrypt can use, counted in bytes', async () => {
+    await request(app.getHttpServer())
+      .post('/api/auth/register')
+      .send({ ...olena, password: 'я'.repeat(40) })
+      .expect(400);
+  });
+
+  it('never returns the password hash from any endpoint', async () => {
+    const agent = request.agent(app.getHttpServer());
+    const registered = await agent
+      .post('/api/auth/register')
+      .send(olena)
+      .expect(201);
+    const login = await agent
+      .post('/api/auth/login')
+      .send({ email: olena.email.toUpperCase(), password: olena.password })
+      .expect(200);
+    const me = await agent.get('/api/auth/me').expect(200);
+
+    for (const { body } of [registered, login, me]) {
+      expect(JSON.stringify(body)).not.toMatch(/passwordHash|$2[aby]$/);
+    }
+  });
+
   it('does not let a visitor choose their own role while registering', async () => {
     await request(app.getHttpServer())
       .post('/api/auth/register')
@@ -159,6 +183,17 @@ describe('Authentication and roles (HTTP)', () => {
       await agent.delete(`/api/users/${created.body.id}`).expect(204);
 
       expect(updated.body).toMatchObject({ name: 'Olena K.' });
+      await agent.get('/api/users').expect(200);
+    });
+
+    it('stops an Admin from demoting themselves', async () => {
+      const agent = await loginAsAdmin();
+      const me = await agent.get('/api/auth/me').expect(200);
+
+      await agent
+        .patch(`/api/users/${me.body.id}`)
+        .send({ role: 'USER' })
+        .expect(403);
       await agent.get('/api/users').expect(200);
     });
 

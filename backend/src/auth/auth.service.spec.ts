@@ -69,7 +69,11 @@ describe('AuthService', () => {
       password: 'correct-horse',
     });
 
-    await moduleRef.get(UsersService).update(user.id, { role: Role.ADMIN });
+    await moduleRef
+      .get(UsersService)
+      .update({ id: 'other-admin', role: Role.ADMIN }, user.id, {
+        role: Role.ADMIN,
+      });
 
     expect(await auth.authenticate(accessToken)).toEqual({
       id: user.id,

@@ -35,6 +35,6 @@ export interface ExchangeRequest {
   id: string;
   createdAt: string;
   requester: Person;
-  requestedBook: ExchangeBook & { owner: Person };
+  requestedBook: ExchangeBook & { owner: Omit<Person, 'email'> };
   offeredBooks: ExchangeBook[];
 }

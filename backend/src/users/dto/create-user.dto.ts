@@ -1,5 +1,6 @@
 import {
   IsEmail,
+  IsByteLength,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -18,10 +19,10 @@ export class CreateUserDto {
   @MaxLength(100)
   name: string;
 
-  // bcrypt only uses the first 72 bytes of a password.
+  // bcrypt only uses the first 72 bytes (not characters) of a password.
   @IsString()
   @MinLength(8)
-  @MaxLength(72)
+  @IsByteLength(0, 72)
   password: string;
 
   @IsOptional()

@@ -85,6 +85,22 @@ describe('ExchangesService', () => {
     expect(notify.mock.calls[0]![0].offeredBooks).toHaveLength(2);
   });
 
+  it('does not reveal the Owner’s email to the Requester', async () => {
+    const created = await exchanges.create(taras, {
+      requestedBookId: olenaBookId,
+      offeredBookIds: tarasBookIds,
+    });
+    const [listed] = await exchanges.listSent(taras);
+
+    for (const request of [created, listed!]) {
+      expect(request.requestedBook.owner).toEqual({
+        id: olena.id,
+        name: 'Olena',
+      });
+      expect(JSON.stringify(request)).not.toContain('olena@example.com');
+    }
+  });
+
   it('rejects a request for the Requester’s own Book', async () => {
     await expect(
       exchanges.create(olena, {

@@ -36,10 +36,11 @@ export class UsersController {
 
   @Patch(':id')
   update(
+    @CurrentUser() actor: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDto,
   ): Promise<PublicUser> {
-    return this.users.update(id, dto);
+    return this.users.update(actor, id, dto);
   }
 
   @Delete(':id')
