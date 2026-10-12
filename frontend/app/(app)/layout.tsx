@@ -38,17 +38,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const links = [
-    { href: '/', label: 'Browse' },
-    { href: '/my-books', label: 'My books' },
+    { href: '/books', label: 'Browse' },
+    { href: '/me/books', label: 'My books' },
     { href: '/exchanges', label: 'Exchanges' },
-    ...(me.role === 'ADMIN' ? [{ href: '/admin/users', label: 'Users' }] : []),
+    ...(me.role === 'ADMIN' ? [{ href: '/admin', label: 'Users' }] : []),
   ];
 
   return (
     <>
       <header className="nav">
         <div className="container nav__inner">
-          <Link href="/" className="nav__brand">
+          <Link href="/books" className="nav__brand">
             Book Exchange
           </Link>
           <nav className="nav__links" aria-label="Main">
@@ -57,7 +57,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 key={href}
                 href={href}
                 className="nav__link"
-                aria-current={pathname === href ? 'page' : undefined}
+                aria-current={
+                  pathname === href || pathname.startsWith(`${href}/`)
+                    ? 'page'
+                    : undefined
+                }
               >
                 {label}
               </Link>

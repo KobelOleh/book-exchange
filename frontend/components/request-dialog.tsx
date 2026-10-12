@@ -76,7 +76,7 @@ export function RequestDialog({
           {mine.data?.items.length === 0 && (
             <p className="muted">
               You have no books to offer yet.{' '}
-              <Link href="/my-books">Add some first.</Link>
+              <Link href="/me/books">Add some first.</Link>
             </p>
           )}
           {mine.data?.items.map((offered) => (

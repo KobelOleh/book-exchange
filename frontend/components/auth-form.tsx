@@ -26,7 +26,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       }),
     onSuccess: (user) => {
       queryClient.setQueryData(ME_KEY, user);
-      router.replace('/');
+      router.replace('/books');
     },
   });
 

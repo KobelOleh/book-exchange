@@ -33,7 +33,7 @@ export default function BookDetailPage() {
 
   function goBack() {
     if (window.history.length > 1) router.back();
-    else router.push('/');
+    else router.push('/books');
   }
 
   const notFound =
@@ -51,7 +51,8 @@ export default function BookDetailPage() {
       {book.isPending && <BookDetailSkeleton />}
       {notFound && (
         <EmptyState title="Book not found">
-          It may have been removed. <Link href="/">Browse other books.</Link>
+          It may have been removed.{' '}
+          <Link href="/books">Browse other books.</Link>
         </EmptyState>
       )}
       {!notFound && <ErrorAlert error={book.error} />}
@@ -91,7 +92,7 @@ export default function BookDetailPage() {
                   onClick={() =>
                     book.data &&
                     remove.confirmAndRemove(book.data, () =>
-                      router.replace('/'),
+                      router.replace('/books'),
                     )
                   }
                 >

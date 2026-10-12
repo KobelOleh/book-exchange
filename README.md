@@ -40,8 +40,8 @@ The frontend proxies `/api` to the backend through a Next rewrite
 backend still verifies the token on every call. Port 3100 is used because
 Windows can reserve 3000 (check `netsh int ipv4 show excludedportrange protocol=tcp`).
 
-Pages: `/login`, `/register`, `/` (browse, search, request an exchange),
-`/my-books`, `/books/:id` (Book details and Request), `/exchanges`, `/profile` (edit name, email and avatar URL; see your Book count and received requests), `/forgot-password` and `/reset-password` (Password Reset Link), `/admin/users` (Admin only).
+Pages: `/login`, `/register`, `/me/books`,
+`/books` (browse, search, request an exchange), `/books/:id` (Book details and Request), `/exchanges`, `/profile` (edit name, email and avatar URL; see your Book count and received requests), `/forgot-password` and `/reset-password` (Password Reset Link), `/admin` (Admin only).
 
 ## Useful commands
 
