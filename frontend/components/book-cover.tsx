@@ -19,7 +19,11 @@ function PlaceholderIcon() {
   );
 }
 
-/** Book photo with a fixed 2:3 frame; falls back to a placeholder of the same size. */
+/**
+ * Book photo in a fixed 2:3 frame; falls back to a placeholder of the same size.
+ * The photo fills the frame instead of sizing it, because a broken <img> loses
+ * its aspect ratio and would shrink for a moment before the placeholder appears.
+ */
 export function BookCover({
   url,
   title,
@@ -47,12 +51,14 @@ export function BookCover({
   return (
     // Photo URLs are user-supplied, so next/image remote patterns do not apply.
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      className="cover"
-      src={url}
-      alt={`Cover of ${title}`}
-      loading="lazy"
-      onError={() => setFailedUrl(url)}
-    />
+    <div className="cover">
+      <img
+        className="cover__img"
+        src={url}
+        alt=""
+        loading="lazy"
+        onError={() => setFailedUrl(url)}
+      />
+    </div>
   );
 }

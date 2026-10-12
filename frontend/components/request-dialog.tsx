@@ -69,7 +69,9 @@ export function RequestDialog({
         </div>
 
         <div className="dialog__body">
-          {mine.isPending && <RowsSkeleton count={3} />}
+          {mine.isPending && (
+            <RowsSkeleton count={3} rowClassName="skeleton--pick" />
+          )}
           <ErrorAlert error={mine.error} />
           {mine.data?.items.length === 0 && (
             <p className="muted">

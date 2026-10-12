@@ -46,21 +46,44 @@ export function EmptyState({
   );
 }
 
+/** Same boxes as BookCard, so the grid does not change height when the Books arrive. */
+function BookCardSkeleton() {
+  return (
+    <div className="card book-card" aria-hidden="true">
+      <div className="skeleton cover" />
+      <div className="book-card__body">
+        <p className="book-card__title skeleton">&nbsp;</p>
+        <p className="book-card__meta skeleton">&nbsp;</p>
+        <p className="book-card__meta skeleton">&nbsp;</p>
+      </div>
+      <div className="book-card__actions">
+        <span className="skeleton skeleton--button" />
+      </div>
+    </div>
+  );
+}
+
 export function BookGridSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div className="book-grid" role="status" aria-label="Loading books">
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="skeleton skeleton--card" />
+        <BookCardSkeleton key={index} />
       ))}
     </div>
   );
 }
 
-export function RowsSkeleton({ count = 3 }: { count?: number }) {
+export function RowsSkeleton({
+  count = 3,
+  rowClassName = 'skeleton--row',
+}: {
+  count?: number;
+  rowClassName?: string;
+}) {
   return (
     <div className="record-list" role="status" aria-label="Loading">
       {Array.from({ length: count }, (_, index) => (
-        <div key={index} className="skeleton skeleton--row" />
+        <div key={index} className={`skeleton ${rowClassName}`} />
       ))}
     </div>
   );
