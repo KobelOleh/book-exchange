@@ -1,7 +1,6 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Link from 'next/link';
 import { useState } from 'react';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
@@ -135,10 +134,10 @@ export default function ProfilePage() {
         subtitle="Your details, your books and the requests you received."
       >
         {profile.data && (
-          <Link href="/my-books" className="count">
+          <span className="count">
             {profile.data.booksCount}{' '}
             {profile.data.booksCount === 1 ? 'book' : 'books'}
-          </Link>
+          </span>
         )}
       </PageHeader>
       <ErrorAlert error={profile.error} />

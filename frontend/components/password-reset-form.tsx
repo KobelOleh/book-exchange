@@ -25,10 +25,12 @@ export function ForgotPasswordForm() {
         </p>
       </div>
       {send.isSuccess ? (
-        <p className="card form" role="status">
-          If {email} is registered, a reset link is on its way. It works once
-          and expires in an hour.
-        </p>
+        <div className="card form" role="status">
+          <p>
+            If {email} is registered, a reset link is on its way. It works once
+            and expires in an hour.
+          </p>
+        </div>
       ) : (
         <form
           className="card form"
@@ -79,10 +81,12 @@ export function ResetPasswordForm() {
         <h1>Choose a new password</h1>
       </div>
       {reset.isSuccess ? (
-        <p className="card form" role="status">
-          Your password was changed. <Link href="/login">Log in</Link> with the
-          new one.
-        </p>
+        <div className="card form" role="status">
+          <p>
+            Your password was changed. <Link href="/login">Log in</Link> with
+            the new one.
+          </p>
+        </div>
       ) : !token ? (
         <p className="alert" role="alert">
           This reset link is incomplete.{' '}

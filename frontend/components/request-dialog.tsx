@@ -34,10 +34,7 @@ export function RequestDialog({
         method: 'POST',
         body: { requestedBookId: book.id, offeredBookIds: selected },
       }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['exchanges'] });
-      dialog.current?.close();
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['exchanges'] }),
   });
 
   function toggle(id: string) {
@@ -65,40 +62,59 @@ export function RequestDialog({
           </p>
         </div>
 
-        <div className="dialog__body">
-          {mine.isPending && <RowsSkeleton count={3} />}
-          <ErrorAlert error={mine.error} />
-          {mine.data?.length === 0 && (
-            <p className="muted">
-              You have no books to offer yet.{' '}
-              <Link href="/my-books">Add some first.</Link>
-            </p>
-          )}
-          {mine.data?.map((offered) => (
-            <label key={offered.id} className="pick">
-              <input
-                type="checkbox"
-                checked={selected.includes(offered.id)}
-                onChange={() => toggle(offered.id)}
-              />
-              <BookRow book={offered} />
-            </label>
-          ))}
-          <ErrorAlert error={send.error} />
-        </div>
+        {send.isSuccess ? (
+          <>
+            <div className="dialog__body">
+              <p role="status">
+                Request sent. {book.owner.name} has been notified and will see
+                the books you offered.
+              </p>
+            </div>
+            <div className="dialog__foot">
+              <Button onClick={() => dialog.current?.close()}>Done</Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="dialog__body">
+              {mine.isPending && <RowsSkeleton count={3} />}
+              <ErrorAlert error={mine.error} />
+              {mine.data?.length === 0 && (
+                <p className="muted">
+                  You have no books to offer yet.{' '}
+                  <Link href="/my-books">Add some first.</Link>
+                </p>
+              )}
+              {mine.data?.map((offered) => (
+                <label key={offered.id} className="pick">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(offered.id)}
+                    onChange={() => toggle(offered.id)}
+                  />
+                  <BookRow book={offered} />
+                </label>
+              ))}
+              <ErrorAlert error={send.error} />
+            </div>
 
-        <div className="dialog__foot">
-          <Button variant="secondary" onClick={() => dialog.current?.close()}>
-            Cancel
-          </Button>
-          <Button
-            disabled={selected.length === 0}
-            loading={send.isPending}
-            onClick={() => send.mutate()}
-          >
-            Send request
-          </Button>
-        </div>
+            <div className="dialog__foot">
+              <Button
+                variant="secondary"
+                onClick={() => dialog.current?.close()}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={selected.length === 0}
+                loading={send.isPending}
+                onClick={() => send.mutate()}
+              >
+                Send request
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </dialog>
   );
