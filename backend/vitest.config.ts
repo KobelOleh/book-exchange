@@ -10,5 +10,9 @@ export default defineConfig({
     root: './',
     include: ['**/*.spec.ts'],
     passWithNoTests: true,
+    globalSetup: ['./test/support/global-setup.ts'],
+    setupFiles: ['./test/support/use-test-database.ts'],
+    // Test files share one database, so they must not run concurrently.
+    fileParallelism: false,
   },
 });
