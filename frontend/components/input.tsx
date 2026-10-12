@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { InputHTMLAttributes } from 'react';
 import { cn } from '@/lib/cn';
 
@@ -10,6 +11,48 @@ export function Input({
   ...rest
 }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(controlClass, className)} {...rest} />;
+}
+
+/** A password input with an eye button on the right to reveal what was typed. */
+export function PasswordInput({
+  className,
+  ...rest
+}: Omit<InputHTMLAttributes<HTMLInputElement>, 'type'>) {
+  const [visible, setVisible] = useState(false);
+  const label = visible ? 'Hide password' : 'Show password';
+
+  return (
+    <span className="relative block">
+      <Input
+        className={cn('pr-11', className)}
+        type={visible ? 'text' : 'password'}
+        {...rest}
+      />
+      <button
+        type="button"
+        className="absolute inset-y-0 right-0 inline-flex w-10 items-center justify-center rounded-sm text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-focus"
+        aria-label={label}
+        title={label}
+        aria-pressed={visible}
+        onClick={() => setVisible((current) => !current)}
+      >
+        <svg
+          className="size-5"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+          <circle cx="12" cy="12" r="3" />
+          {visible && <path d="M4 4l16 16" />}
+        </svg>
+      </button>
+    </span>
+  );
 }
 
 /** A label above a control. */

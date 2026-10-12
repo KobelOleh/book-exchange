@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { AuthShell, authFooterClass } from './auth-shell';
 import { Button } from './button';
 import { FormCard } from './card';
-import { Field, Input } from './input';
+import { Field, Input, PasswordInput } from './input';
 import { ErrorAlert } from './ui';
 
 /** Asks for the email a Password Reset Link should be sent to. */
@@ -97,8 +97,7 @@ export function ResetPasswordForm() {
           }}
         >
           <Field label="New password">
-            <Input
-              type="password"
+            <PasswordInput
               required
               minLength={8}
               maxLength={72}

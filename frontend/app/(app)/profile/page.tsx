@@ -5,7 +5,13 @@ import { useState } from 'react';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
 import { FormCard } from '@/components/card';
-import { Field, FormActions, FormGrid, Input } from '@/components/input';
+import {
+  Field,
+  FormActions,
+  FormGrid,
+  Input,
+  PasswordInput,
+} from '@/components/input';
 import { RequestList } from '@/components/request-list';
 import { RowsSkeleton } from '@/components/skeleton';
 import { useToast } from '@/components/toast';
@@ -75,8 +81,7 @@ function ProfileForm({ profile }: { profile: Profile }) {
         </Field>
         {emailChanged && (
           <Field label="Current password (needed to change your email)">
-            <Input
-              type="password"
+            <PasswordInput
               required
               maxLength={72}
               autoComplete="current-password"

@@ -10,7 +10,7 @@ import type { User } from '@/lib/types';
 import { AuthShell, authFooterClass } from './auth-shell';
 import { Button } from './button';
 import { FormCard } from './card';
-import { Field, Input } from './input';
+import { Field, Input, PasswordInput } from './input';
 import { ErrorAlert } from './ui';
 
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
@@ -70,8 +70,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           />
         </Field>
         <Field label="Password">
-          <Input
-            type="password"
+          <PasswordInput
             required
             minLength={isRegister ? 8 : undefined}
             maxLength={72}

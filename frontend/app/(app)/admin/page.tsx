@@ -5,7 +5,13 @@ import { useState } from 'react';
 import { Button } from '@/components/button';
 import { Card, FormCard } from '@/components/card';
 import { useConfirm } from '@/components/confirm';
-import { Field, FormActions, FormGrid, Input } from '@/components/input';
+import {
+  Field,
+  FormActions,
+  FormGrid,
+  Input,
+  PasswordInput,
+} from '@/components/input';
 import { Select } from '@/components/select';
 import { RowsSkeleton } from '@/components/skeleton';
 import { useToast } from '@/components/toast';
@@ -109,8 +115,7 @@ export default function AdminUsersPage() {
             />
           </Field>
           <Field label="Password">
-            <Input
-              type="password"
+            <PasswordInput
               required
               minLength={8}
               maxLength={72}
