@@ -1,5 +1,6 @@
 import type { ExchangeRequest } from '@/lib/types';
 import { BookRow } from './book-card';
+import { Card } from './card';
 
 export function RequestCard({
   request,
@@ -9,8 +10,8 @@ export function RequestCard({
   kind: 'sent' | 'received';
 }) {
   return (
-    <article className="card record">
-      <div className="record__head">
+    <Card as="article" className="grid gap-3 p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
         <p>
           {kind === 'sent' ? (
             <>
@@ -25,16 +26,18 @@ export function RequestCard({
             </>
           )}
         </p>
-        <time className="record__time" dateTime={request.createdAt}>
+        <time className="text-xs text-muted" dateTime={request.createdAt}>
           {new Date(request.createdAt).toLocaleString()}
         </time>
       </div>
-      <p className="record__label">In return, offered</p>
-      <div className="offer-list">
+      <p className="text-xs font-semibold tracking-wide text-muted uppercase">
+        In return, offered
+      </p>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
         {request.offeredBooks.map((book) => (
           <BookRow key={book.id} book={book} />
         ))}
       </div>
-    </article>
+    </Card>
   );
 }

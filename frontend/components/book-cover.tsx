@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { cn } from '@/lib/cn';
 
-function PlaceholderIcon() {
+function PlaceholderIcon({ className }: { className: string }) {
   return (
     <svg
+      className={className}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -28,32 +30,43 @@ export function BookCover({
   url,
   title,
   showLabel = true,
+  className,
 }: {
   url?: string | null;
   title: string;
+  /** Large covers say "No cover"; compact ones (book rows) show just the icon. */
   showLabel?: boolean;
+  className?: string;
 }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const frame = cn(
+    'relative block aspect-[2/3] w-full overflow-hidden rounded-sm bg-subtle',
+    className,
+  );
 
   if (!url || failedUrl === url) {
     return (
       <div
-        className="cover cover--placeholder"
+        className={cn(
+          frame,
+          'flex flex-col items-center justify-center gap-2 border border-line-strong text-xs text-muted',
+          showLabel && 'border-dashed',
+        )}
         role="img"
         aria-label={`No cover for ${title}`}
       >
-        <PlaceholderIcon />
+        <PlaceholderIcon className={showLabel ? 'size-8' : 'size-5'} />
         {showLabel && <span>No cover</span>}
       </div>
     );
   }
 
   return (
-    // Photo URLs are user-supplied, so next/image remote patterns do not apply.
-    // eslint-disable-next-line @next/next/no-img-element
-    <div className="cover">
+    <div className={frame}>
+      {/* Photo URLs are user-supplied, so next/image remote patterns do not apply. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        className="cover__img"
+        className="absolute inset-0 size-full object-cover"
         src={url}
         alt=""
         loading="lazy"

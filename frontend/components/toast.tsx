@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { cn } from '@/lib/cn';
 
 type ToastKind = 'success' | 'error';
 
@@ -58,17 +59,26 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext value={value}>
       {children}
-      <div className="toasts" role="region" aria-label="Notifications">
+      <div
+        className="pointer-events-none fixed right-4 bottom-4 z-50 grid w-[min(380px,calc(100vw-2rem))] gap-2"
+        role="region"
+        aria-label="Notifications"
+      >
         {toasts.map(({ id, kind, message }) => (
           <div
             key={id}
-            className={`toast toast--${kind}`}
+            className={cn(
+              'pointer-events-auto flex animate-toast-in items-start gap-3 rounded-md border border-l-4 border-line bg-surface px-4 py-3 text-ink shadow-dialog motion-reduce:animate-none',
+              kind === 'success' ? 'border-l-accent' : 'border-l-danger',
+            )}
             role={kind === 'error' ? 'alert' : 'status'}
           >
-            <span className="toast__message">{message}</span>
+            <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+              {message}
+            </span>
             <button
               type="button"
-              className="toast__close"
+              className="size-6 flex-none cursor-pointer rounded-sm text-xl leading-none text-muted hover:bg-subtle hover:text-ink"
               aria-label="Dismiss"
               onClick={() => dismiss(id)}
             >

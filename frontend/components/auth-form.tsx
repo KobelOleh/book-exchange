@@ -7,7 +7,10 @@ import { useState } from 'react';
 import { api } from '@/lib/api';
 import { ME_KEY } from '@/lib/auth';
 import type { User } from '@/lib/types';
+import { AuthShell, authFooterClass } from './auth-shell';
 import { Button } from './button';
+import { FormCard } from './card';
+import { Field, Input } from './input';
 import { ErrorAlert } from './ui';
 
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
@@ -31,27 +34,23 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   });
 
   return (
-    <main className="auth">
-      <div className="auth__head">
-        <h1>{isRegister ? 'Create your account' : 'Welcome back'}</h1>
-        <p className="muted">
-          {isRegister
-            ? 'List your books and swap them with other readers.'
-            : 'Log in to browse books and manage your exchanges.'}
-        </p>
-      </div>
-      <form
-        className="card form"
+    <AuthShell
+      title={isRegister ? 'Create your account' : 'Welcome back'}
+      subtitle={
+        isRegister
+          ? 'List your books and swap them with other readers.'
+          : 'Log in to browse books and manage your exchanges.'
+      }
+    >
+      <FormCard
         onSubmit={(event) => {
           event.preventDefault();
           submit.mutate();
         }}
       >
         {isRegister && (
-          <label className="field">
-            Name
-            <input
-              className="input"
+          <Field label="Name">
+            <Input
               type="text"
               required
               maxLength={100}
@@ -59,23 +58,19 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-          </label>
+          </Field>
         )}
-        <label className="field">
-          Email
-          <input
-            className="input"
+        <Field label="Email">
+          <Input
             type="email"
             required
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-        </label>
-        <label className="field">
-          Password
-          <input
-            className="input"
+        </Field>
+        <Field label="Password">
+          <Input
             type="password"
             required
             minLength={isRegister ? 8 : undefined}
@@ -84,23 +79,23 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-        </label>
+        </Field>
         <ErrorAlert error={submit.error} />
-        <Button type="submit" loading={submit.isPending}>
+        <Button type="submit" className="w-full" loading={submit.isPending}>
           {isRegister ? 'Register' : 'Log in'}
         </Button>
         {!isRegister && (
-          <Link href="/forgot-password" className="auth__footer muted">
+          <Link href="/forgot-password" className={authFooterClass}>
             Forgot your password?
           </Link>
         )}
-      </form>
-      <p className="auth__footer muted">
+      </FormCard>
+      <p className={authFooterClass}>
         {isRegister ? 'Already registered? ' : 'No account yet? '}
         <Link href={isRegister ? '/login' : '/register'}>
           {isRegister ? 'Log in' : 'Register'}
         </Link>
       </p>
-    </main>
+    </AuthShell>
   );
 }

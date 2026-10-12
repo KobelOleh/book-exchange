@@ -4,7 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ExchangeRequest } from '@/lib/types';
 import { RequestCard } from './request-card';
-import { EmptyState, ErrorAlert, RowsSkeleton } from './ui';
+import { RowsSkeleton } from './skeleton';
+import { EmptyState, ErrorAlert, Section } from './ui';
 
 /** The caller's sent or received ExchangeRequests, with loading and empty states. */
 export function RequestList({
@@ -22,21 +23,17 @@ export function RequestList({
   });
 
   return (
-    <section className="section">
-      <div className="section__title">
-        <h2>{title}</h2>
-        {requests.data && <span className="count">{requests.data.length}</span>}
-      </div>
+    <Section title={title} count={requests.data?.length}>
       <ErrorAlert error={requests.error} />
       {requests.isPending && <RowsSkeleton />}
       {requests.data?.length === 0 && (
         <EmptyState title="Nothing here yet">{emptyText}</EmptyState>
       )}
-      <div className="record-list">
+      <div className="grid gap-3">
         {requests.data?.map((request) => (
           <RequestCard key={request.id} request={request} kind={kind} />
         ))}
       </div>
-    </section>
+    </Section>
   );
 }

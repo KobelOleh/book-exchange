@@ -30,10 +30,13 @@ export function Pager({
   totalPages: number;
   onChange: (page: number) => void;
 }) {
-  if (totalPages <= 1) return <div className="pager" aria-hidden="true" />;
+  if (totalPages <= 1) return <div className="min-h-8" aria-hidden="true" />;
 
   return (
-    <nav className="pager" aria-label="Pagination">
+    <nav
+      className="flex min-h-8 flex-wrap items-center justify-center gap-3"
+      aria-label="Pagination"
+    >
       <Button
         variant="secondary"
         size="sm"
@@ -42,17 +45,21 @@ export function Pager({
       >
         ‹ Prev
       </Button>
-      <ol className="pager__pages">
+      <ol className="flex items-center gap-1">
         {pageItems(page, totalPages).map((item, index) =>
           item === 'gap' ? (
-            <li key={`gap-${index}`} className="pager__gap" aria-hidden="true">
+            <li
+              key={`gap-${index}`}
+              className="px-1 text-muted"
+              aria-hidden="true"
+            >
               …
             </li>
           ) : (
             <li key={item}>
               <button
                 type="button"
-                className="pager__page"
+                className="h-8 min-w-8 cursor-pointer rounded-sm border border-transparent px-2 tabular-nums hover:bg-subtle aria-[current=page]:cursor-default aria-[current=page]:border-accent aria-[current=page]:bg-accent aria-[current=page]:text-accent-ink"
                 aria-current={item === page ? 'page' : undefined}
                 aria-label={`Page ${item}`}
                 onClick={() => onChange(item)}
@@ -71,7 +78,7 @@ export function Pager({
       >
         Next ›
       </Button>
-      <span className="pager__status muted">
+      <span className="basis-full text-center text-xs text-muted md:basis-auto">
         Page {page} of {totalPages}
       </span>
     </nav>

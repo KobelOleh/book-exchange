@@ -1,4 +1,6 @@
 import type { SelectHTMLAttributes } from 'react';
+import { cn } from '@/lib/cn';
+import { controlClass } from './input';
 
 type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
   compact?: boolean;
@@ -7,22 +9,20 @@ type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
 /** A native select (keeps keyboard and screen reader behaviour) with our own chevron. */
 export function Select({ compact, className, children, ...rest }: SelectProps) {
   return (
-    <span className={`select${compact ? ' select--sm' : ''}`}>
+    <span className={cn('relative', compact ? 'inline-block' : 'block')}>
       <select
-        className={[
-          'input',
-          'select__control',
-          compact && 'input--sm',
+        className={cn(
+          controlClass,
+          'cursor-pointer appearance-none pr-9 focus-visible:outline-offset-1 disabled:cursor-not-allowed',
+          compact && 'min-h-8 w-auto',
           className,
-        ]
-          .filter(Boolean)
-          .join(' ')}
+        )}
         {...rest}
       >
         {children}
       </select>
       <svg
-        className="select__icon"
+        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted"
         viewBox="0 0 20 20"
         fill="none"
         stroke="currentColor"

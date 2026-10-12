@@ -3,14 +3,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Suspense, useState } from 'react';
 import { BookCard } from '@/components/book-card';
-import { Button } from '@/components/button';
 import { BookList } from '@/components/book-list';
+import { Button } from '@/components/button';
+import { FormCard } from '@/components/card';
+import { Field, FormActions, FormGrid, Input } from '@/components/input';
 import { useToast } from '@/components/toast';
-import { EmptyState, ErrorAlert, PageHeader } from '@/components/ui';
+import { EmptyState, ErrorAlert, PageHeader, Section } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useBooks, useRemoveBook } from '@/lib/books';
-import { useListParams } from '@/lib/use-list-params';
 import type { Book } from '@/lib/types';
+import { useListParams } from '@/lib/use-list-params';
 
 function MyBooks() {
   const queryClient = useQueryClient();
@@ -45,61 +47,50 @@ function MyBooks() {
         subtitle="Books you list here can be requested by other readers."
       />
 
-      <form
-        className="card form"
+      <FormCard
         onSubmit={(event) => {
           event.preventDefault();
           add.mutate();
         }}
       >
-        <div className="form-grid">
-          <label className="field">
-            Name
-            <input
-              className="input"
+        <FormGrid>
+          <Field label="Name">
+            <Input
               type="text"
               required
               maxLength={200}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-          </label>
-          <label className="field">
-            Author
-            <input
-              className="input"
+          </Field>
+          <Field label="Author">
+            <Input
               type="text"
               required
               maxLength={200}
               value={author}
               onChange={(e) => setAuthor(e.target.value)}
             />
-          </label>
-          <label className="field">
-            Photo URL
-            <input
-              className="input"
+          </Field>
+          <Field label="Photo URL">
+            <Input
               type="url"
               required
               placeholder="https://…"
               value={photoUrl}
               onChange={(e) => setPhotoUrl(e.target.value)}
             />
-          </label>
-        </div>
+          </Field>
+        </FormGrid>
         <ErrorAlert error={add.error} />
-        <div className="form__actions">
+        <FormActions>
           <Button type="submit" loading={add.isPending}>
             Add book
           </Button>
-        </div>
-      </form>
+        </FormActions>
+      </FormCard>
 
-      <section className="section">
-        <div className="section__title">
-          <h2>Your collection</h2>
-          {books.data && <span className="count">{books.data.total}</span>}
-        </div>
+      <Section title="Your collection" count={books.data?.total}>
         <BookList
           query={books}
           page={page}
@@ -122,7 +113,7 @@ function MyBooks() {
             </BookCard>
           )}
         />
-      </section>
+      </Section>
     </>
   );
 }

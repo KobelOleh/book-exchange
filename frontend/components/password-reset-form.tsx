@@ -5,7 +5,10 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { api } from '@/lib/api';
+import { AuthShell, authFooterClass } from './auth-shell';
 import { Button } from './button';
+import { FormCard } from './card';
+import { Field, Input } from './input';
 import { ErrorAlert } from './ui';
 
 /** Asks for the email a Password Reset Link should be sent to. */
@@ -17,49 +20,43 @@ export function ForgotPasswordForm() {
   });
 
   return (
-    <main className="auth">
-      <div className="auth__head">
-        <h1>Forgot your password?</h1>
-        <p className="muted">
-          Enter your email and we will send you a link to choose a new one.
-        </p>
-      </div>
+    <AuthShell
+      title="Forgot your password?"
+      subtitle="Enter your email and we will send you a link to choose a new one."
+    >
       {send.isSuccess ? (
-        <div className="card form" role="status">
+        <FormCard as="div" role="status">
           <p>
             If {email} is registered, a reset link is on its way. It works once
             and expires in an hour.
           </p>
-        </div>
+        </FormCard>
       ) : (
-        <form
-          className="card form"
+        <FormCard
           onSubmit={(event) => {
             event.preventDefault();
             send.mutate();
           }}
         >
-          <label className="field">
-            Email
-            <input
-              className="input"
+          <Field label="Email">
+            <Input
               type="email"
               required
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-          </label>
+          </Field>
           <ErrorAlert error={send.error} />
-          <Button type="submit" loading={send.isPending}>
+          <Button type="submit" className="w-full" loading={send.isPending}>
             Send reset link
           </Button>
-        </form>
+        </FormCard>
       )}
-      <p className="auth__footer muted">
+      <p className={authFooterClass}>
         <Link href="/login">Back to log in</Link>
       </p>
-    </main>
+    </AuthShell>
   );
 }
 
@@ -76,34 +73,31 @@ export function ResetPasswordForm() {
   });
 
   return (
-    <main className="auth">
-      <div className="auth__head">
-        <h1>Choose a new password</h1>
-      </div>
+    <AuthShell title="Choose a new password">
       {reset.isSuccess ? (
-        <div className="card form" role="status">
+        <FormCard as="div" role="status">
           <p>
             Your password was changed. <Link href="/login">Log in</Link> with
             the new one.
           </p>
-        </div>
+        </FormCard>
       ) : !token ? (
-        <p className="alert" role="alert">
+        <p
+          className="rounded-sm bg-danger-soft p-3 text-sm text-danger"
+          role="alert"
+        >
           This reset link is incomplete.{' '}
           <Link href="/forgot-password">Request a new one.</Link>
         </p>
       ) : (
-        <form
-          className="card form"
+        <FormCard
           onSubmit={(event) => {
             event.preventDefault();
             reset.mutate();
           }}
         >
-          <label className="field">
-            New password
-            <input
-              className="input"
+          <Field label="New password">
+            <Input
               type="password"
               required
               minLength={8}
@@ -112,13 +106,13 @@ export function ResetPasswordForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-          </label>
+          </Field>
           <ErrorAlert error={reset.error} />
-          <Button type="submit" loading={reset.isPending}>
+          <Button type="submit" className="w-full" loading={reset.isPending}>
             Change password
           </Button>
-        </form>
+        </FormCard>
       )}
-    </main>
+    </AuthShell>
   );
 }

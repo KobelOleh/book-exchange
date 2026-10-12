@@ -5,7 +5,8 @@ import { BookCard } from '@/components/book-card';
 import { BookList } from '@/components/book-list';
 import { Button } from '@/components/button';
 import { RequestDialog } from '@/components/request-dialog';
-import { EmptyState, PageHeader } from '@/components/ui';
+import { Input } from '@/components/input';
+import { Count, EmptyState, PageHeader } from '@/components/ui';
 import { useMe } from '@/lib/auth';
 import { useBooks, useRemoveBook } from '@/lib/books';
 import type { Book } from '@/lib/types';
@@ -34,22 +35,22 @@ function BrowseBooks() {
         title="Browse books"
         subtitle="Find a book you want and offer some of yours in return."
       />
-      <div className="toolbar">
+      <div className="flex flex-wrap items-center gap-3">
         <label className="sr-only" htmlFor="search">
           Search books
         </label>
-        <input
+        <Input
           id="search"
-          className="input"
+          className="flex-[1_1_260px] sm:max-w-105"
           type="search"
           placeholder="Search by name or author"
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
         />
         {total !== undefined && (
-          <span className="count" aria-live="polite">
+          <Count aria-live="polite">
             {total} {total === 1 ? 'book' : 'books'}
-          </span>
+          </Count>
         )}
       </div>
 

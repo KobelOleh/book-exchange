@@ -1,5 +1,10 @@
 export function Spinner() {
-  return <span className="spinner" aria-hidden="true" />;
+  return (
+    <span
+      className="inline-block size-[1em] animate-[spin_0.7s_linear_infinite] rounded-full border-2 border-current border-r-transparent motion-reduce:animate-[spin_3s_linear_infinite]"
+      aria-hidden="true"
+    />
+  );
 }
 
 export function PageHeader({
@@ -12,10 +17,10 @@ export function PageHeader({
   children?: React.ReactNode;
 }) {
   return (
-    <header className="page-header">
-      <div className="page-header__text">
+    <header className="flex flex-wrap items-end justify-between gap-4">
+      <div className="grid gap-1">
         <h1>{title}</h1>
-        {subtitle && <p className="muted">{subtitle}</p>}
+        {subtitle && <p className="text-muted">{subtitle}</p>}
       </div>
       {children}
     </header>
@@ -25,7 +30,10 @@ export function PageHeader({
 export function ErrorAlert({ error }: { error: Error | null }) {
   if (!error) return null;
   return (
-    <p className="alert" role="alert">
+    <p
+      className="rounded-sm bg-danger-soft p-3 text-sm text-danger"
+      role="alert"
+    >
       {error.message}
     </p>
   );
@@ -39,52 +47,42 @@ export function EmptyState({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="empty">
-      <p className="empty__title">{title}</p>
-      {children && <p className="muted">{children}</p>}
+    <div className="grid justify-items-center gap-2 rounded-md border border-dashed border-line-strong px-4 py-12 text-center">
+      <p className="font-semibold">{title}</p>
+      {children && <p className="text-muted">{children}</p>}
     </div>
   );
 }
 
-/** Same boxes as BookCard, so the grid does not change height when the Books arrive. */
-function BookCardSkeleton() {
+/** Count shown next to a heading, e.g. "12 books". */
+export function Count({
+  children,
+  ...rest
+}: React.ComponentPropsWithoutRef<'span'>) {
   return (
-    <div className="card book-card" aria-hidden="true">
-      <div className="skeleton cover" />
-      <div className="book-card__body">
-        <p className="book-card__title skeleton">&nbsp;</p>
-        <p className="book-card__meta skeleton">&nbsp;</p>
-        <p className="book-card__meta skeleton">&nbsp;</p>
-      </div>
-      <div className="book-card__actions">
-        <span className="skeleton skeleton--button" />
-      </div>
-    </div>
+    <span className="text-sm text-muted" {...rest}>
+      {children}
+    </span>
   );
 }
 
-export function BookGridSkeleton({ count = 8 }: { count?: number }) {
-  return (
-    <div className="book-grid" role="status" aria-label="Loading books">
-      {Array.from({ length: count }, (_, index) => (
-        <BookCardSkeleton key={index} />
-      ))}
-    </div>
-  );
-}
-
-export function RowsSkeleton({
-  count = 3,
-  rowClassName = 'skeleton--row',
+/** A titled block of a page, with an optional count beside the title. */
+export function Section({
+  title,
+  count,
+  children,
 }: {
+  title: string;
   count?: number;
-  rowClassName?: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="record-list" role="status" aria-label="Loading">
-      {Array.from({ length: count }, (_, index) => (
-        <div key={index} className={`skeleton ${rowClassName}`} />
-      ))}
-    </div>
+    <section className="grid content-start gap-4">
+      <div className="flex items-baseline gap-2">
+        <h2>{title}</h2>
+        {count !== undefined && <Count>{count}</Count>}
+      </div>
+      {children}
+    </section>
   );
 }

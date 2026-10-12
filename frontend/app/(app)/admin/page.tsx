@@ -3,20 +3,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button } from '@/components/button';
+import { Card, FormCard } from '@/components/card';
 import { useConfirm } from '@/components/confirm';
+import { Field, FormActions, FormGrid, Input } from '@/components/input';
 import { Select } from '@/components/select';
+import { RowsSkeleton } from '@/components/skeleton';
 import { useToast } from '@/components/toast';
-import {
-  EmptyState,
-  ErrorAlert,
-  PageHeader,
-  RowsSkeleton,
-} from '@/components/ui';
+import { EmptyState, ErrorAlert, PageHeader, Section } from '@/components/ui';
 import { api } from '@/lib/api';
 import { useMe } from '@/lib/auth';
 import type { Role, User } from '@/lib/types';
 
 const EMPTY_FORM = { name: '', email: '', password: '', role: 'USER' as Role };
+
+// On phones the table becomes a stack of rows, each cell labelled by its data-label.
+const headCell =
+  'p-3 text-left text-xs font-normal tracking-wide text-muted uppercase';
+const cell =
+  'border-b border-line p-3 align-middle group-last:border-b-0 max-sm:flex max-sm:items-center max-sm:justify-between max-sm:gap-3 max-sm:border-0 max-sm:px-0 max-sm:py-1 max-sm:before:text-xs max-sm:before:text-muted max-sm:before:content-[attr(data-label)]';
 
 export default function AdminUsersPage() {
   const { data: me } = useMe();
@@ -64,7 +68,10 @@ export default function AdminUsersPage() {
 
   if (me && !isAdmin) {
     return (
-      <p className="alert" role="alert">
+      <p
+        className="rounded-sm bg-danger-soft p-3 text-sm text-danger"
+        role="alert"
+      >
         Only admins can manage users.
       </p>
     );
@@ -77,39 +84,32 @@ export default function AdminUsersPage() {
         subtitle="Create accounts, change roles and remove users."
       />
 
-      <form
-        className="card form"
+      <FormCard
         onSubmit={(event) => {
           event.preventDefault();
           create.mutate();
         }}
       >
-        <div className="form-grid">
-          <label className="field">
-            Name
-            <input
-              className="input"
+        <FormGrid>
+          <Field label="Name">
+            <Input
               type="text"
               required
               maxLength={100}
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
-          </label>
-          <label className="field">
-            Email
-            <input
-              className="input"
+          </Field>
+          <Field label="Email">
+            <Input
               type="email"
               required
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
             />
-          </label>
-          <label className="field">
-            Password
-            <input
-              className="input"
+          </Field>
+          <Field label="Password">
+            <Input
               type="password"
               required
               minLength={8}
@@ -118,9 +118,8 @@ export default function AdminUsersPage() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
-          </label>
-          <label className="field">
-            Role
+          </Field>
+          <Field label="Role">
             <Select
               value={form.role}
               onChange={(e) =>
@@ -130,33 +129,29 @@ export default function AdminUsersPage() {
               <option value="USER">User</option>
               <option value="ADMIN">Admin</option>
             </Select>
-          </label>
-        </div>
+          </Field>
+        </FormGrid>
         <ErrorAlert error={create.error} />
-        <div className="form__actions">
+        <FormActions>
           <Button type="submit" loading={create.isPending}>
             Create user
           </Button>
-        </div>
-      </form>
+        </FormActions>
+      </FormCard>
 
-      <section className="section">
-        <div className="section__title">
-          <h2>All users</h2>
-          {users.data && <span className="count">{users.data.length}</span>}
-        </div>
+      <Section title="All users" count={users.data?.length}>
         <ErrorAlert error={users.error} />
         {users.isPending && isAdmin && <RowsSkeleton />}
         {users.data?.length === 0 && <EmptyState title="No users" />}
         {users.data && users.data.length > 0 && (
-          <div className="card table-wrap">
-            <table className="table">
-              <thead>
+          <Card className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead className="max-sm:hidden">
                 <tr>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th className="table__actions">
+                  <th className={headCell}>Name</th>
+                  <th className={headCell}>Email</th>
+                  <th className={headCell}>Role</th>
+                  <th className={`${headCell} w-px`}>
                     <span className="sr-only">Actions</span>
                   </th>
                 </tr>
@@ -165,10 +160,17 @@ export default function AdminUsersPage() {
                 {users.data.map((user) => {
                   const isSelf = user.id === me?.id;
                   return (
-                    <tr key={user.id}>
-                      <td data-label="Name">{user.name}</td>
-                      <td data-label="Email">{user.email}</td>
-                      <td data-label="Role">
+                    <tr
+                      key={user.id}
+                      className="group max-sm:grid max-sm:gap-1 max-sm:border-b max-sm:border-line max-sm:px-3 max-sm:py-3 max-sm:last:border-b-0"
+                    >
+                      <td className={cell} data-label="Name">
+                        {user.name}
+                      </td>
+                      <td className={cell} data-label="Email">
+                        {user.email}
+                      </td>
+                      <td className={cell} data-label="Role">
                         <Select
                           compact
                           aria-label={`Role of ${user.name}`}
@@ -185,7 +187,9 @@ export default function AdminUsersPage() {
                           <option value="ADMIN">Admin</option>
                         </Select>
                       </td>
-                      <td className="table__actions">
+                      <td
+                        className={`${cell} w-px whitespace-nowrap sm:text-right`}
+                      >
                         <Button
                           variant="danger"
                           size="sm"
@@ -214,9 +218,9 @@ export default function AdminUsersPage() {
                 })}
               </tbody>
             </table>
-          </div>
+          </Card>
         )}
-      </section>
+      </Section>
     </>
   );
 }

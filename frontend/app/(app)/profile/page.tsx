@@ -4,9 +4,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
+import { FormCard } from '@/components/card';
+import { Field, FormActions, FormGrid, Input } from '@/components/input';
 import { RequestList } from '@/components/request-list';
+import { RowsSkeleton } from '@/components/skeleton';
 import { useToast } from '@/components/toast';
-import { ErrorAlert, PageHeader, RowsSkeleton } from '@/components/ui';
+import { Count, ErrorAlert, PageHeader } from '@/components/ui';
 import { api } from '@/lib/api';
 import { ME_KEY, PROFILE_KEY, useProfile } from '@/lib/auth';
 import type { Profile } from '@/lib/types';
@@ -40,22 +43,19 @@ function ProfileForm({ profile }: { profile: Profile }) {
   });
 
   return (
-    <form
-      className="card form"
+    <FormCard
       onSubmit={(event) => {
         event.preventDefault();
         save.mutate();
       }}
     >
-      <div className="profile-head">
+      <div className="flex items-center gap-4">
         <Avatar url={avatarUrl.trim()} name={name || profile.name} size="lg" />
-        <p className="muted">Your avatar is shown in the top bar.</p>
+        <p className="text-muted">Your avatar is shown in the top bar.</p>
       </div>
-      <div className="form-grid">
-        <label className="field">
-          Name
-          <input
-            className="input"
+      <FormGrid>
+        <Field label="Name">
+          <Input
             type="text"
             required
             maxLength={100}
@@ -63,23 +63,19 @@ function ProfileForm({ profile }: { profile: Profile }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-        </label>
-        <label className="field">
-          Email
-          <input
-            className="input"
+        </Field>
+        <Field label="Email">
+          <Input
             type="email"
             required
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-        </label>
+        </Field>
         {emailChanged && (
-          <label className="field">
-            Current password (needed to change your email)
-            <input
-              className="input"
+          <Field label="Current password (needed to change your email)">
+            <Input
               type="password"
               required
               maxLength={72}
@@ -87,27 +83,25 @@ function ProfileForm({ profile }: { profile: Profile }) {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
             />
-          </label>
+          </Field>
         )}
-        <label className="field">
-          Avatar URL
-          <input
-            className="input"
+        <Field label="Avatar URL">
+          <Input
             type="url"
             maxLength={2048}
             placeholder="https://…"
             value={avatarUrl}
             onChange={(e) => setAvatarUrl(e.target.value)}
           />
-        </label>
-      </div>
+        </Field>
+      </FormGrid>
       <ErrorAlert error={save.error} />
-      <div className="form__actions">
+      <FormActions>
         <Button type="submit" loading={save.isPending}>
           Save changes
         </Button>
-      </div>
-    </form>
+      </FormActions>
+    </FormCard>
   );
 }
 
@@ -121,10 +115,10 @@ export default function ProfilePage() {
         subtitle="Your details, your books and the requests you received."
       >
         {profile.data && (
-          <span className="count">
+          <Count>
             {profile.data.booksCount}{' '}
             {profile.data.booksCount === 1 ? 'book' : 'books'}
-          </span>
+          </Count>
         )}
       </PageHeader>
       <ErrorAlert error={profile.error} />

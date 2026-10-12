@@ -1,10 +1,10 @@
 # testInsiders
 
-Full-stack: **Next.js** + **NestJS** + **PostgreSQL** (Prisma).
+Full-stack: **Next.js** (Tailwind CSS) + **NestJS** + **PostgreSQL** (Prisma).
 
 ```
 backend/    NestJS API (Prisma, Swagger)
-frontend/   Next.js (App Router) + React Query
+frontend/   Next.js (App Router) + Tailwind CSS + React Query
 docker-compose.yml   PostgreSQL
 ```
 

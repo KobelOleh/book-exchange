@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 import { Button } from './button';
+import { DialogFoot, DialogFrame, DialogHead, dialogClass } from './dialog';
 
 interface ConfirmOptions {
   title: string;
@@ -51,7 +52,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
       {pending && (
         <dialog
           ref={dialog}
-          className="dialog dialog--confirm"
+          className={`${dialogClass} max-w-105`}
           aria-labelledby="confirm-title"
           onClose={() => settle(false)}
           onClick={(event) => {
@@ -59,12 +60,12 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             if (event.target === dialog.current) dialog.current?.close();
           }}
         >
-          <div className="dialog__inner">
-            <div className="dialog__head">
+          <DialogFrame>
+            <DialogHead>
               <h2 id="confirm-title">{pending.options.title}</h2>
-              <p className="muted">{pending.options.message}</p>
-            </div>
-            <div className="dialog__foot">
+              <p className="text-muted">{pending.options.message}</p>
+            </DialogHead>
+            <DialogFoot>
               <Button
                 variant="secondary"
                 onClick={() => dialog.current?.close()}
@@ -74,8 +75,8 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               <Button variant="danger" onClick={() => settle(true)}>
                 {pending.options.confirmLabel ?? 'Confirm'}
               </Button>
-            </div>
-          </div>
+            </DialogFoot>
+          </DialogFrame>
         </dialog>
       )}
     </ConfirmContext>
