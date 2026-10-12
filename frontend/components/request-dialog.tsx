@@ -52,7 +52,7 @@ export function RequestDialog({
   return (
     <dialog
       ref={dialog}
-      className="dialog"
+      className="dialog dialog--request"
       aria-labelledby="request-title"
       onClose={onClose}
       onClick={(event) => {
